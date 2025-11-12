@@ -279,6 +279,52 @@ body {
 }
 
 /* Board Members */
+
+.board-member p {
+  color: #dc2626;
+  font-weight: bold;
+  margin-bottom: 1rem;
+  white-space: normal; /* allow wrapping if too long */
+  word-spacing: normal;
+  letter-spacing: normal;
+}
+
+.board-member p strong,
+.board-member p span {
+  display: inline; /* ensures words sit on the same line */
+  white-space: normal;
+}
+
+/* ===============================
+   FIX PORTFOLIO TITLE SPACING + STYLE
+   =============================== */
+
+.board-member .title {
+  color: #dc2626;
+  font-weight: bold;
+  margin-bottom: 1rem;
+  white-space: normal;
+  word-spacing: normal;
+  letter-spacing: normal;
+  line-height: 1.4;
+  text-align: left;
+  font-size: 1.05rem;
+}
+
+/* override pasted inline styles */
+.board-member p[style] {
+  word-spacing: normal !important;
+  letter-spacing: normal !important;
+  white-space: normal !important;
+}
+
+/* center titles on smaller screens */
+@media (max-width: 768px) {
+  .board-member .title {
+    text-align: center;
+  }
+}
+
 .board-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -294,14 +340,27 @@ body {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
+/* Uniform headshot framing */
 .board-member img {
-    width: 150px;
-    height: 150px;
-    border-radius: 8px; /* changed from 50% */
-    object-fit: cover;
-    margin-bottom: 1rem;
-    border: 3px solid #dc2626;
+  width: 220px !important;           /* one consistent size */
+  aspect-ratio: 4 / 5;               /* portrait box, e.g., 220×275 */
+  height: auto !important;           /* let aspect-ratio set height */
+  object-fit: cover;                 /* fills frame (no letterboxing) */
+  object-position: 50% 15%;          /* bias up to keep heads in frame */
+  border-radius: 10px;
+  border: 3px solid #dc2626;
+  background: #fff;                  /* in case of transparent PNGs */
+  display: block;
+  margin: 0 auto 1rem;
 }
+
+/* Slightly smaller on mobile */
+@media (max-width: 768px) {
+  .board-member img {
+    width: 170px !important;         /* becomes ~170×212.5 */
+  }
+}
+
 
 .board-member h4 {
     font-size: 1.2rem;
@@ -777,9 +836,20 @@ body {
   transition: background-color 0.3s ease, transform 0.2s ease;
 }
 
+.bio-btn {
+  color: #fff !important;
+}
+
+.bio-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+}
+
 .bio-btn:hover {
   background-color: #b91c1c;
   transform: translateY(-2px);
+  color: #fff; /* ensure it stays white on hover */
 }
 
 /* Responsive */
