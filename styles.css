@@ -1609,3 +1609,75 @@ body {
     padding: 0.8rem 1.5rem;
   }
 }
+
+/* Portfolio Reporting Page */
+
+.reporting-hero {
+    position: relative;
+    width: 100%;
+    height: 45vh;
+    overflow: hidden;
+}
+
+.reporting-hero img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: brightness(60%);
+}
+
+.reporting-hero-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    color: white;
+}
+
+.reporting-hero-text h1 {
+    font-size: 4rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.reporting-title-section {
+    text-align: center;
+    margin-top: 40px;
+}
+
+.reporting-title-section h2 {
+    font-size: 2.2rem;
+    margin-bottom: 20px;
+}
+
+.reporting-grid-section {
+    display: flex;
+    justify-content: center;
+    padding: 20px 0 60px 0;
+}
+
+.reporting-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+    width: 80%;
+    max-width: 900px;
+}
+
+.report-btn {
+    display: block;
+    background-color: #b5121b; /* Deep FIG Red */
+    color: white;
+    padding: 12px 10px;
+    border-radius: 6px;
+    text-align: center;
+    transition: 0.25s ease;
+    font-size: 0.95rem;
+    font-weight: 500;
+}
+
+.report-btn:hover {
+    background-color: #5a0000; /* Darker red on hover */
+    transform: translateY(-2px);
+}
