@@ -788,13 +788,18 @@ body {
 }
 
 .bio-photo img {
-  width: 300px;
-  height: 300px;
+  width: 300px;                 /* base width */
+  aspect-ratio: 4 / 5;          /* same portrait ratio as board members */
+  height: auto;                 /* let aspect ratio control height */
+  object-fit: cover;            /* fill frame without stretching */
+  object-position: 50% 15%;     /* bias upward to keep face centered */
   border-radius: 10px;
-  object-fit: cover;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
   border: 3px solid #dc2626;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  background: #fff;             /* fallback for transparent PNGs */
+  display: block;
 }
+
 
 .bio-content h2 {
   font-size: 2rem;
