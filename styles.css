@@ -1681,3 +1681,26 @@ body {
     background-color: #5a0000; /* Darker red on hover */
     transform: translateY(-2px);
 }
+/* MATCH HOME HERO TO PORTFOLIO REPORTING HERO */
+.hero-reporting-style {
+    position: relative;
+    width: 100%;
+    height: 60vh; /* same height as reporting hero */
+    overflow: hidden;
+}
+
+.hero-reporting-style img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* 🔥 this removes black bars and fills screen */
+    filter: brightness(60%); /* optional — matches reporting look */
+}
+
+.hero-reporting-style .hero-content {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    color: white;
+}
