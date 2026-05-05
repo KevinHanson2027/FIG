@@ -1,21 +1,13 @@
 -- ================================================
--- FIG App — Supabase Database Schema v2
+-- FIG App — Supabase Database Schema v3
 -- Run this entire file in the Supabase SQL Editor
---
--- If you ran the old schema first, this will clean
--- up the profiles table that caused infinite recursion.
 -- ================================================
 
 
--- ── CLEANUP: remove old auth-dependent objects ──────────────────
-drop trigger if exists on_auth_user_created on auth.users;
+-- ── CLEANUP: wipe old auth-dependent objects ─────────────────────
+drop trigger  if exists on_auth_user_created on auth.users;
 drop function if exists public.handle_new_user();
-
-drop policy if exists "Users can read own profile"      on public.profiles;
-drop policy if exists "Admins can read all profiles"    on public.profiles;
-drop policy if exists "Admins can update all profiles"  on public.profiles;
-drop policy if exists "Admins can insert profiles"      on public.profiles;
-drop table  if exists public.profiles;
+drop table    if exists public.profiles CASCADE;   -- CASCADE removes all dependent policies & FK constraints
 -- ────────────────────────────────────────────────────────────────
 
 
@@ -91,9 +83,33 @@ create policy "open" on public.announcements for all using (true) with check (tr
 grant select, insert, update, delete on public.announcements to anon;
 
 
--- ================================================
--- Storage Buckets (create manually in Dashboard → Storage)
---   "resources" → Private   (member file uploads)
---   "headshots" → Public    (member profile photos)
---   "images"    → Public    (page content photos)
--- ================================================
+-- ── Storage Policies ─────────────────────────────────────────────
+-- Run AFTER creating buckets: "images" (public), "headshots" (public), "resources" (private)
+
+-- images bucket (page content photos — public read, anon write)
+drop policy if exists "images public read"   on storage.objects;
+drop policy if exists "images anon insert"   on storage.objects;
+drop policy if exists "images anon update"   on storage.objects;
+drop policy if exists "images anon delete"   on storage.objects;
+create policy "images public read"  on storage.objects for select using (bucket_id = 'images');
+create policy "images anon insert"  on storage.objects for insert with check (bucket_id = 'images');
+create policy "images anon update"  on storage.objects for update using (bucket_id = 'images');
+create policy "images anon delete"  on storage.objects for delete using (bucket_id = 'images');
+
+-- headshots bucket (member photos — public read, anon write)
+drop policy if exists "headshots public read"  on storage.objects;
+drop policy if exists "headshots anon insert"  on storage.objects;
+drop policy if exists "headshots anon update"  on storage.objects;
+drop policy if exists "headshots anon delete"  on storage.objects;
+create policy "headshots public read"  on storage.objects for select using (bucket_id = 'headshots');
+create policy "headshots anon insert"  on storage.objects for insert with check (bucket_id = 'headshots');
+create policy "headshots anon update"  on storage.objects for update using (bucket_id = 'headshots');
+create policy "headshots anon delete"  on storage.objects for delete using (bucket_id = 'headshots');
+
+-- resources bucket (member files — anon read & write)
+drop policy if exists "resources anon read"    on storage.objects;
+drop policy if exists "resources anon insert"  on storage.objects;
+drop policy if exists "resources anon delete"  on storage.objects;
+create policy "resources anon read"    on storage.objects for select using (bucket_id = 'resources');
+create policy "resources anon insert"  on storage.objects for insert with check (bucket_id = 'resources');
+create policy "resources anon delete"  on storage.objects for delete using (bucket_id = 'resources');
