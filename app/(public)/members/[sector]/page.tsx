@@ -49,25 +49,42 @@ function isPM(m: Member) {
   return m.title?.toLowerCase().includes('portfolio manager') ?? false
 }
 
-function MemberCard({ m, bioLength = 220 }: { m: Member; bioLength?: number }) {
+function MemberCard({
+  m,
+  sectorSlug,
+  bioLength = 180,
+}: {
+  m: Member
+  sectorSlug: string
+  bioLength?: number
+}) {
   const truncatedBio = m.bio
     ? m.bio.slice(0, bioLength) + (m.bio.length > bioLength ? '…' : '')
     : ''
+  const bioUrl = `/members/${sectorSlug}/${m.id}`
 
   return (
     <div className="member-card">
-      <div className="member-card-photo-wrap">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={m.headshot_url ?? '/Website Assets/Logos/FIG Logo.png'}
-          alt={m.name}
-          className="member-card-photo"
-        />
-      </div>
+      {/* Clicking photo goes to bio page */}
+      <Link href={bioUrl} className="member-card-photo-link">
+        <div className="member-card-photo-wrap">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={m.headshot_url ?? '/Website Assets/Logos/FIG Logo.png'}
+            alt={m.name}
+            className="member-card-photo"
+          />
+        </div>
+      </Link>
+
       <div className="member-card-body">
-        <h4 className="member-card-name">{m.name}</h4>
+        {/* Clicking name also goes to bio page */}
+        <Link href={bioUrl} style={{ textDecoration: 'none', color: 'inherit' }}>
+          <h4 className="member-card-name">{m.name}</h4>
+        </Link>
         <p className="member-card-title">{m.title}</p>
         {truncatedBio && <p className="member-card-bio">{truncatedBio}</p>}
+
         <div className="member-card-links">
           {m.email && (
             <a href={`mailto:${m.email}`} className="member-card-btn member-card-btn-email">
@@ -75,10 +92,18 @@ function MemberCard({ m, bioLength = 220 }: { m: Member; bioLength?: number }) {
             </a>
           )}
           {m.linkedin_url && (
-            <a href={m.linkedin_url} target="_blank" rel="noopener noreferrer" className="member-card-btn member-card-btn-linkedin">
+            <a
+              href={m.linkedin_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="member-card-btn member-card-btn-linkedin"
+            >
               LinkedIn
             </a>
           )}
+          <Link href={bioUrl} className="member-card-btn member-card-btn-bio">
+            Bio
+          </Link>
         </div>
       </div>
     </div>
@@ -148,7 +173,7 @@ export default async function SectorPage({ params }: { params: { sector: string 
           <>
             {/* Executive Board — Sara + Matt, no header */}
             <div className="members-grid members-grid-leadership">
-              {members.map(m => <MemberCard key={m.id} m={m} bioLength={280} />)}
+              {members.map(m => <MemberCard key={m.id} m={m} sectorSlug={slug} bioLength={280} />)}
             </div>
 
             {/* All Portfolio Managers */}
@@ -156,7 +181,14 @@ export default async function SectorPage({ params }: { params: { sector: string 
               <>
                 <SectionHeading>Portfolio Managers</SectionHeading>
                 <div className="members-grid">
-                  {allPMs.map(m => <MemberCard key={m.id} m={m} bioLength={180} />)}
+                  {allPMs.map(m => (
+                    <MemberCard
+                      key={m.id}
+                      m={m}
+                      sectorSlug={Object.entries(sectorMap).find(([, v]) => v === m.sector)?.[0] ?? slug}
+                      bioLength={180}
+                    />
+                  ))}
                 </div>
               </>
             )}
@@ -168,7 +200,7 @@ export default async function SectorPage({ params }: { params: { sector: string 
               <>
                 <SectionHeading>Portfolio Manager</SectionHeading>
                 <div className="members-grid members-grid-pm">
-                  {pm.map(m => <MemberCard key={m.id} m={m} bioLength={280} />)}
+                  {pm.map(m => <MemberCard key={m.id} m={m} sectorSlug={slug} bioLength={280} />)}
                 </div>
               </>
             )}
@@ -178,7 +210,7 @@ export default async function SectorPage({ params }: { params: { sector: string 
               <>
                 <SectionHeading>Analysts</SectionHeading>
                 <div className="members-grid">
-                  {analysts.map(m => <MemberCard key={m.id} m={m} bioLength={180} />)}
+                  {analysts.map(m => <MemberCard key={m.id} m={m} sectorSlug={slug} bioLength={180} />)}
                 </div>
               </>
             )}

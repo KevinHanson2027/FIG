@@ -863,6 +863,25 @@ body {
   color: #fff !important;
 }
 
+.member-card-btn-bio {
+  background: #f3f4f6;
+  color: #333 !important;
+  border: 1px solid #ddd;
+}
+
+.member-card-btn-bio:hover {
+  background: #e5e7eb;
+}
+
+.member-card-photo-link {
+  display: block;
+  text-decoration: none;
+}
+
+.member-card-photo-link:hover .member-card-photo {
+  filter: brightness(90%);
+}
+
 @media (max-width: 768px) {
   .members-hero-content h1 { font-size: 2.5rem; }
   .members-grid-leadership,
