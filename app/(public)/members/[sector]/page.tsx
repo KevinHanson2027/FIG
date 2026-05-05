@@ -15,94 +15,172 @@ const sectorMap: Record<string, string> = {
   'marketing':        'Marketing',
 }
 
+const sectorHeroes: Record<string, string> = {
+  'executive-board':  '/Website Assets/Group Photos/Serious Group Photo #1.JPG',
+  'consumers':        '/Website Assets/Group Photos/Smiling Group Photo #1.JPG',
+  'energy-utilities': '/Website Assets/Group Photos/Serious Group Photo #2.JPG',
+  'financials':       '/Website Assets/Group Photos/Smiling Group Photo #2.JPG',
+  'fixed-income':     '/Website Assets/Group Photos/Serious Group Photo #3.JPG',
+  'healthcare':       '/Website Assets/Group Photos/Smiling Group Photo #3.JPG',
+  'industrials':      '/Website Assets/Group Photos/Group Photo Side Angel.JPG',
+  'real-estate':      '/Website Assets/Group Photos/Smiling Group Photo #1.JPG',
+  'technology':       '/Website Assets/Group Photos/Serious Group Photo #3.JPG',
+  'marketing':        '/Website Assets/Group Photos/Smiling Group Photo #2.JPG',
+}
+
+type Member = {
+  id: string
+  name: string
+  title: string | null
+  sector: string
+  email: string | null
+  linkedin_url: string | null
+  bio: string | null
+  headshot_url: string | null
+  sort_order: number
+}
+
 export async function generateMetadata({ params }: { params: { sector: string } }): Promise<Metadata> {
   const name = sectorMap[params.sector] ?? params.sector
   return { title: name }
 }
 
-export default async function SectorPage({ params }: { params: { sector: string } }) {
-  const sectorName = sectorMap[params.sector] ?? params.sector
-  const supabase = await createClient()
+function isPM(m: Member) {
+  return m.title?.toLowerCase().includes('portfolio manager') ?? false
+}
 
-  const { data: members } = await supabase
+function MemberCard({ m, bioLength = 220 }: { m: Member; bioLength?: number }) {
+  const truncatedBio = m.bio
+    ? m.bio.slice(0, bioLength) + (m.bio.length > bioLength ? '…' : '')
+    : ''
+
+  return (
+    <div className="member-card">
+      <div className="member-card-photo-wrap">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={m.headshot_url ?? '/Website Assets/Logos/FIG Logo.png'}
+          alt={m.name}
+          className="member-card-photo"
+        />
+      </div>
+      <div className="member-card-body">
+        <h4 className="member-card-name">{m.name}</h4>
+        <p className="member-card-title">{m.title}</p>
+        {truncatedBio && <p className="member-card-bio">{truncatedBio}</p>}
+        <div className="member-card-links">
+          {m.email && (
+            <a href={`mailto:${m.email}`} className="member-card-btn member-card-btn-email">
+              Email
+            </a>
+          )}
+          {m.linkedin_url && (
+            <a href={m.linkedin_url} target="_blank" rel="noopener noreferrer" className="member-card-btn member-card-btn-linkedin">
+              LinkedIn
+            </a>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function SectionHeading({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="member-section-heading">
+      <h2>{children}</h2>
+    </div>
+  )
+}
+
+export default async function SectorPage({ params }: { params: { sector: string } }) {
+  const slug       = params.sector
+  const sectorName = sectorMap[slug] ?? slug
+  const heroImage  = sectorHeroes[slug] ?? '/Website Assets/Group Photos/Serious Group Photo #1.JPG'
+  const supabase   = await createClient()
+
+  const isExecutiveBoard = slug === 'executive-board'
+
+  // Fetch this sector's members
+  const { data: sectorMembers } = await supabase
     .from('members_directory')
     .select('*')
     .eq('sector', sectorName)
     .eq('is_active', true)
     .order('sort_order')
 
-  const portfolioManagers = members?.filter(m =>
-    m.title?.toLowerCase().includes('portfolio manager') || m.title?.toLowerCase().includes('co-president')
-  ) ?? []
-  const analysts = members?.filter(m =>
-    !m.title?.toLowerCase().includes('portfolio manager') && !m.title?.toLowerCase().includes('co-president')
-  ) ?? []
+  // For Executive Board: also fetch all PMs from other sectors
+  let allPMs: Member[] = []
+  if (isExecutiveBoard) {
+    const { data: pmData } = await supabase
+      .from('members_directory')
+      .select('*')
+      .neq('sector', 'Executive Board')
+      .eq('is_active', true)
+      .ilike('title', '%Portfolio Manager%')
+      .order('sector')
+    allPMs = pmData ?? []
+  }
+
+  const members = sectorMembers ?? []
+  const pm        = members.filter(m => isPM(m))
+  const analysts  = members.filter(m => !isPM(m))
 
   return (
     <>
-      <section className="about-hero" style={{ height: '45vh' }}>
+      {/* ── Hero ─────────────────────────────────────────────── */}
+      <section className="members-hero">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/Website Assets/About/Serious Group Photo.png" alt={`${sectorName} - Fairfield Investment Group`} />
-        <div className="about-hero-content">
+        <img src={heroImage} alt={`${sectorName} — Fairfield Investment Group`} />
+        <div className="members-hero-content">
           <h1>{sectorName}</h1>
         </div>
       </section>
 
-      <div className="main-content">
-        {members?.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '4rem 2rem' }}>
-            <h2 style={{ color: '#dc2626', marginBottom: '1rem' }}>{sectorName}</h2>
-            <p style={{ color: '#666' }}>Member profiles are being updated. Check back soon.</p>
+      {/* ── Content ──────────────────────────────────────────── */}
+      <div className="members-page-content">
+        {members.length === 0 && !isExecutiveBoard ? (
+          <div className="members-empty">
+            <p>Member profiles are being updated. Check back soon.</p>
             <Link href="/" className="btn" style={{ marginTop: '1.5rem' }}>Back to Home</Link>
           </div>
+        ) : isExecutiveBoard ? (
+          <>
+            {/* Executive Board — Sara + Matt, no header */}
+            <div className="members-grid members-grid-leadership">
+              {members.map(m => <MemberCard key={m.id} m={m} bioLength={280} />)}
+            </div>
+
+            {/* All Portfolio Managers */}
+            {allPMs.length > 0 && (
+              <>
+                <SectionHeading>Portfolio Managers</SectionHeading>
+                <div className="members-grid">
+                  {allPMs.map(m => <MemberCard key={m.id} m={m} bioLength={180} />)}
+                </div>
+              </>
+            )}
+          </>
         ) : (
           <>
-            {portfolioManagers.length > 0 && (
-              <section className="section">
-                <h2>{sectorName === 'Executive Board' ? 'Executive Board' : 'Portfolio Manager'}</h2>
-                <div className="board-grid">
-                  {portfolioManagers.map(m => (
-                    <div key={m.id} className="board-member">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={m.headshot_url ?? '/Website Assets/Logos/FIG Logo.png'}
-                        alt={m.name}
-                      />
-                      <h4>{m.name}</h4>
-                      <p className="title">{m.title}</p>
-                      <div className="bio">{m.bio?.slice(0, 200)}{(m.bio?.length ?? 0) > 200 ? '…' : ''}</div>
-                      <div className="contact">
-                        {m.email && <a href={`mailto:${m.email}`}>📧 Email</a>}
-                        {m.linkedin_url && <> · <a href={m.linkedin_url} target="_blank" rel="noopener noreferrer">LinkedIn</a></>}
-                      </div>
-                    </div>
-                  ))}
+            {/* Portfolio Manager */}
+            {pm.length > 0 && (
+              <>
+                <SectionHeading>Portfolio Manager</SectionHeading>
+                <div className="members-grid members-grid-pm">
+                  {pm.map(m => <MemberCard key={m.id} m={m} bioLength={280} />)}
                 </div>
-              </section>
+              </>
             )}
 
+            {/* Analysts */}
             {analysts.length > 0 && (
-              <section className="section">
-                <h2>Analysts</h2>
-                <div className="board-grid">
-                  {analysts.map(m => (
-                    <div key={m.id} className="board-member">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={m.headshot_url ?? '/Website Assets/Logos/FIG Logo.png'}
-                        alt={m.name}
-                      />
-                      <h4>{m.name}</h4>
-                      <p className="title">{m.title}</p>
-                      <div className="bio">{m.bio?.slice(0, 150)}{(m.bio?.length ?? 0) > 150 ? '…' : ''}</div>
-                      <div className="contact">
-                        {m.email && <a href={`mailto:${m.email}`}>📧 Email</a>}
-                        {m.linkedin_url && <> · <a href={m.linkedin_url} target="_blank" rel="noopener noreferrer">LinkedIn</a></>}
-                      </div>
-                    </div>
-                  ))}
+              <>
+                <SectionHeading>Analysts</SectionHeading>
+                <div className="members-grid">
+                  {analysts.map(m => <MemberCard key={m.id} m={m} bioLength={180} />)}
                 </div>
-              </section>
+              </>
             )}
           </>
         )}
