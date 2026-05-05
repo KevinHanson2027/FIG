@@ -10,7 +10,8 @@
       "Bash(git rm *)",
       "Bash(git commit -m 'Remove legacy index.html so Vercel builds Next.js correctly *)",
       "Bash(git push *)",
-      "Bash(git commit -m 'Add member directory seed SQL \\(51 members, all sectors\\) *)"
+      "Bash(git commit -m 'Add member directory seed SQL \\(51 members, all sectors\\) *)",
+      "Bash(git commit -m 'Switch member hero to smiling group photo *)"
     ]
   }
 }
