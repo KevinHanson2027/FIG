@@ -15,17 +15,18 @@ const sectorMap: Record<string, string> = {
   'marketing':        'Marketing',
 }
 
+// # in filenames must be encoded as %23 or browsers treat it as a fragment
 const sectorHeroes: Record<string, string> = {
-  'executive-board':  '/Website Assets/Group Photos/Serious Group Photo #1.JPG',
-  'consumers':        '/Website Assets/Group Photos/Smiling Group Photo #1.JPG',
-  'energy-utilities': '/Website Assets/Group Photos/Serious Group Photo #2.JPG',
-  'financials':       '/Website Assets/Group Photos/Smiling Group Photo #2.JPG',
-  'fixed-income':     '/Website Assets/Group Photos/Serious Group Photo #3.JPG',
-  'healthcare':       '/Website Assets/Group Photos/Smiling Group Photo #3.JPG',
+  'executive-board':  '/Website Assets/Group Photos/Serious Group Photo %231.JPG',
+  'consumers':        '/Website Assets/Group Photos/Smiling Group Photo %231.JPG',
+  'energy-utilities': '/Website Assets/Group Photos/Serious Group Photo %232.JPG',
+  'financials':       '/Website Assets/Group Photos/Smiling Group Photo %232.JPG',
+  'fixed-income':     '/Website Assets/Group Photos/Serious Group Photo %233.JPG',
+  'healthcare':       '/Website Assets/Group Photos/Smiling Group Photo %233.JPG',
   'industrials':      '/Website Assets/Group Photos/Group Photo Side Angel.JPG',
-  'real-estate':      '/Website Assets/Group Photos/Smiling Group Photo #1.JPG',
-  'technology':       '/Website Assets/Group Photos/Serious Group Photo #3.JPG',
-  'marketing':        '/Website Assets/Group Photos/Smiling Group Photo #2.JPG',
+  'real-estate':      '/Website Assets/Group Photos/Smiling Group Photo %231.JPG',
+  'technology':       '/Website Assets/Group Photos/Serious Group Photo %233.JPG',
+  'marketing':        '/Website Assets/Group Photos/Smiling Group Photo %232.JPG',
 }
 
 export async function generateMetadata({

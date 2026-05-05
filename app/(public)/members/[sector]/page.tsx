@@ -15,17 +15,18 @@ const sectorMap: Record<string, string> = {
   'marketing':        'Marketing',
 }
 
+// # in filenames must be encoded as %23 or browsers treat it as a fragment
 const sectorHeroes: Record<string, string> = {
-  'executive-board':  '/Website Assets/Group Photos/Serious Group Photo #1.JPG',
-  'consumers':        '/Website Assets/Group Photos/Smiling Group Photo #1.JPG',
-  'energy-utilities': '/Website Assets/Group Photos/Serious Group Photo #2.JPG',
-  'financials':       '/Website Assets/Group Photos/Smiling Group Photo #2.JPG',
-  'fixed-income':     '/Website Assets/Group Photos/Serious Group Photo #3.JPG',
-  'healthcare':       '/Website Assets/Group Photos/Smiling Group Photo #3.JPG',
+  'executive-board':  '/Website Assets/Group Photos/Serious Group Photo %231.JPG',
+  'consumers':        '/Website Assets/Group Photos/Smiling Group Photo %231.JPG',
+  'energy-utilities': '/Website Assets/Group Photos/Serious Group Photo %232.JPG',
+  'financials':       '/Website Assets/Group Photos/Smiling Group Photo %232.JPG',
+  'fixed-income':     '/Website Assets/Group Photos/Serious Group Photo %233.JPG',
+  'healthcare':       '/Website Assets/Group Photos/Smiling Group Photo %233.JPG',
   'industrials':      '/Website Assets/Group Photos/Group Photo Side Angel.JPG',
-  'real-estate':      '/Website Assets/Group Photos/Smiling Group Photo #1.JPG',
-  'technology':       '/Website Assets/Group Photos/Serious Group Photo #3.JPG',
-  'marketing':        '/Website Assets/Group Photos/Smiling Group Photo #2.JPG',
+  'real-estate':      '/Website Assets/Group Photos/Smiling Group Photo %231.JPG',
+  'technology':       '/Website Assets/Group Photos/Serious Group Photo %233.JPG',
+  'marketing':        '/Website Assets/Group Photos/Smiling Group Photo %232.JPG',
 }
 
 type Member = {
@@ -49,23 +50,11 @@ function isPM(m: Member) {
   return m.title?.toLowerCase().includes('portfolio manager') ?? false
 }
 
-function MemberCard({
-  m,
-  sectorSlug,
-  bioLength = 180,
-}: {
-  m: Member
-  sectorSlug: string
-  bioLength?: number
-}) {
-  const truncatedBio = m.bio
-    ? m.bio.slice(0, bioLength) + (m.bio.length > bioLength ? '…' : '')
-    : ''
+function MemberCard({ m, sectorSlug }: { m: Member; sectorSlug: string }) {
   const bioUrl = `/members/${sectorSlug}/${m.id}`
 
   return (
     <div className="member-card">
-      {/* Clicking photo goes to bio page */}
       <Link href={bioUrl} className="member-card-photo-link">
         <div className="member-card-photo-wrap">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -78,12 +67,10 @@ function MemberCard({
       </Link>
 
       <div className="member-card-body">
-        {/* Clicking name also goes to bio page */}
         <Link href={bioUrl} style={{ textDecoration: 'none', color: 'inherit' }}>
           <h4 className="member-card-name">{m.name}</h4>
         </Link>
         <p className="member-card-title">{m.title}</p>
-        {truncatedBio && <p className="member-card-bio">{truncatedBio}</p>}
 
         <div className="member-card-links">
           {m.email && (
@@ -173,7 +160,7 @@ export default async function SectorPage({ params }: { params: { sector: string 
           <>
             {/* Executive Board — Sara + Matt, no header */}
             <div className="members-grid members-grid-leadership">
-              {members.map(m => <MemberCard key={m.id} m={m} sectorSlug={slug} bioLength={280} />)}
+              {members.map(m => <MemberCard key={m.id} m={m} sectorSlug={slug} />)}
             </div>
 
             {/* All Portfolio Managers */}
@@ -186,8 +173,7 @@ export default async function SectorPage({ params }: { params: { sector: string 
                       key={m.id}
                       m={m}
                       sectorSlug={Object.entries(sectorMap).find(([, v]) => v === m.sector)?.[0] ?? slug}
-                      bioLength={180}
-                    />
+                                         />
                   ))}
                 </div>
               </>
@@ -200,7 +186,7 @@ export default async function SectorPage({ params }: { params: { sector: string 
               <>
                 <SectionHeading>Portfolio Manager</SectionHeading>
                 <div className="members-grid members-grid-pm">
-                  {pm.map(m => <MemberCard key={m.id} m={m} sectorSlug={slug} bioLength={280} />)}
+                  {pm.map(m => <MemberCard key={m.id} m={m} sectorSlug={slug} />)}
                 </div>
               </>
             )}
@@ -210,7 +196,7 @@ export default async function SectorPage({ params }: { params: { sector: string 
               <>
                 <SectionHeading>Analysts</SectionHeading>
                 <div className="members-grid">
-                  {analysts.map(m => <MemberCard key={m.id} m={m} sectorSlug={slug} bioLength={180} />)}
+                  {analysts.map(m => <MemberCard key={m.id} m={m} sectorSlug={slug} />)}
                 </div>
               </>
             )}
