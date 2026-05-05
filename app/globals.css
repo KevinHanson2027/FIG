@@ -756,10 +756,9 @@ body {
   gap: 1.5rem;
 }
 
-/* PM card: wider, centred, max 3 across */
-.members-grid-pm {
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  max-width: 700px;
+/* Analyst grid — slightly tighter */
+.members-grid-analysts {
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
 }
 
 /* Executive Board leadership: 2 cards, centred */
@@ -883,6 +882,101 @@ body {
 
 .member-card-photo-link:hover .member-card-photo {
   filter: brightness(90%);
+}
+
+/* ── PM Spotlight (Blue Hen-inspired, sector pages only) ──────── */
+
+.pm-spotlight-wrap {
+  display: flex;
+  justify-content: center;
+  margin: 0.5rem 0 1rem;
+}
+
+.pm-spotlight {
+  display: flex;
+  align-items: flex-start;
+  gap: 2.5rem;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.09);
+  padding: 2rem 2.5rem;
+  max-width: 680px;
+  width: 100%;
+  border-top: 4px solid #e62d2e;
+}
+
+.pm-spotlight-photo-link {
+  display: block;
+  flex-shrink: 0;
+  text-decoration: none;
+}
+
+.pm-spotlight-photo-wrap {
+  width: 180px;
+  aspect-ratio: 4 / 5;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 3px solid #e62d2e;
+}
+
+.pm-spotlight-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 15%;
+  display: block;
+  transition: filter 0.2s;
+}
+
+.pm-spotlight-photo-link:hover .pm-spotlight-photo {
+  filter: brightness(90%);
+}
+
+.pm-spotlight-body {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  flex: 1;
+}
+
+.pm-spotlight-name {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #111;
+  margin: 0 0 0.35rem;
+}
+
+.pm-spotlight-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #e62d2e;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin: 0 0 1.5rem;
+}
+
+.pm-spotlight-links {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 600px) {
+  .pm-spotlight {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 1.5rem;
+    gap: 1.25rem;
+  }
+
+  .pm-spotlight-photo-wrap {
+    width: 140px;
+  }
+
+  .pm-spotlight-links {
+    justify-content: center;
+  }
 }
 
 @media (max-width: 768px) {

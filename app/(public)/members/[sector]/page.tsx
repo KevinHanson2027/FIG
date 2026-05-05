@@ -15,7 +15,7 @@ const sectorMap: Record<string, string> = {
   'marketing':        'Marketing',
 }
 
-// # in filenames must be encoded as %23 or browsers treat it as a fragment
+// # in filenames must be %23 or browsers treat it as a URL fragment
 const sectorHeroes: Record<string, string> = {
   'executive-board':  '/Website Assets/Group Photos/Serious Group Photo %231.JPG',
   'consumers':        '/Website Assets/Group Photos/Smiling Group Photo %231.JPG',
@@ -42,59 +42,11 @@ type Member = {
 }
 
 export async function generateMetadata({ params }: { params: { sector: string } }): Promise<Metadata> {
-  const name = sectorMap[params.sector] ?? params.sector
-  return { title: name }
+  return { title: sectorMap[params.sector] ?? params.sector }
 }
 
 function isPM(m: Member) {
   return m.title?.toLowerCase().includes('portfolio manager') ?? false
-}
-
-function MemberCard({ m, sectorSlug }: { m: Member; sectorSlug: string }) {
-  const bioUrl = `/members/${sectorSlug}/${m.id}`
-
-  return (
-    <div className="member-card">
-      <Link href={bioUrl} className="member-card-photo-link">
-        <div className="member-card-photo-wrap">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={m.headshot_url ?? '/Website Assets/Logos/FIG Logo.png'}
-            alt={m.name}
-            className="member-card-photo"
-          />
-        </div>
-      </Link>
-
-      <div className="member-card-body">
-        <Link href={bioUrl} style={{ textDecoration: 'none', color: 'inherit' }}>
-          <h4 className="member-card-name">{m.name}</h4>
-        </Link>
-        <p className="member-card-title">{m.title}</p>
-
-        <div className="member-card-links">
-          {m.email && (
-            <a href={`mailto:${m.email}`} className="member-card-btn member-card-btn-email">
-              Email
-            </a>
-          )}
-          {m.linkedin_url && (
-            <a
-              href={m.linkedin_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="member-card-btn member-card-btn-linkedin"
-            >
-              LinkedIn
-            </a>
-          )}
-          <Link href={bioUrl} className="member-card-btn member-card-btn-bio">
-            Bio
-          </Link>
-        </div>
-      </div>
-    </div>
-  )
 }
 
 function SectionHeading({ children }: { children: React.ReactNode }) {
@@ -105,15 +57,65 @@ function SectionHeading({ children }: { children: React.ReactNode }) {
   )
 }
 
+// ─── Compact card used in analyst grid ────────────────────────────────────────
+function AnalystCard({ m, sectorSlug }: { m: Member; sectorSlug: string }) {
+  const bioUrl = `/members/${sectorSlug}/${m.id}`
+  return (
+    <div className="member-card">
+      <Link href={bioUrl} className="member-card-photo-link">
+        <div className="member-card-photo-wrap">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={m.headshot_url ?? '/Website Assets/Logos/FIG Logo.png'} alt={m.name} className="member-card-photo" />
+        </div>
+      </Link>
+      <div className="member-card-body">
+        <Link href={bioUrl} style={{ textDecoration: 'none', color: 'inherit' }}>
+          <h4 className="member-card-name">{m.name}</h4>
+        </Link>
+        <p className="member-card-title">{m.title}</p>
+        <div className="member-card-links">
+          {m.email && <a href={`mailto:${m.email}`} className="member-card-btn member-card-btn-email">Email</a>}
+          {m.linkedin_url && <a href={m.linkedin_url} target="_blank" rel="noopener noreferrer" className="member-card-btn member-card-btn-linkedin">LinkedIn</a>}
+          <Link href={bioUrl} className="member-card-btn member-card-btn-bio">Bio</Link>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Spotlight card used for Portfolio Manager ────────────────────────────────
+function PMSpotlight({ m, sectorSlug }: { m: Member; sectorSlug: string }) {
+  const bioUrl = `/members/${sectorSlug}/${m.id}`
+  return (
+    <div className="pm-spotlight">
+      <Link href={bioUrl} className="pm-spotlight-photo-link">
+        <div className="pm-spotlight-photo-wrap">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={m.headshot_url ?? '/Website Assets/Logos/FIG Logo.png'} alt={m.name} className="pm-spotlight-photo" />
+        </div>
+      </Link>
+      <div className="pm-spotlight-body">
+        <Link href={bioUrl} style={{ textDecoration: 'none', color: 'inherit' }}>
+          <h3 className="pm-spotlight-name">{m.name}</h3>
+        </Link>
+        <p className="pm-spotlight-title">{m.title}</p>
+        <div className="pm-spotlight-links">
+          {m.email && <a href={`mailto:${m.email}`} className="member-card-btn member-card-btn-email">Email</a>}
+          {m.linkedin_url && <a href={m.linkedin_url} target="_blank" rel="noopener noreferrer" className="member-card-btn member-card-btn-linkedin">LinkedIn</a>}
+          <Link href={bioUrl} className="member-card-btn member-card-btn-bio">Full Bio</Link>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default async function SectorPage({ params }: { params: { sector: string } }) {
-  const slug       = params.sector
-  const sectorName = sectorMap[slug] ?? slug
-  const heroImage  = sectorHeroes[slug] ?? '/Website Assets/Group Photos/Serious Group Photo #1.JPG'
-  const supabase   = await createClient()
-
+  const slug           = params.sector
+  const sectorName     = sectorMap[slug] ?? slug
+  const heroImage      = sectorHeroes[slug] ?? '/Website Assets/Group Photos/Serious Group Photo %231.JPG'
   const isExecutiveBoard = slug === 'executive-board'
+  const supabase       = await createClient()
 
-  // Fetch this sector's members
   const { data: sectorMembers } = await supabase
     .from('members_directory')
     .select('*')
@@ -121,22 +123,22 @@ export default async function SectorPage({ params }: { params: { sector: string 
     .eq('is_active', true)
     .order('sort_order')
 
-  // For Executive Board: also fetch all PMs from other sectors
+  // Executive Board also shows all sector PMs
   let allPMs: Member[] = []
   if (isExecutiveBoard) {
-    const { data: pmData } = await supabase
+    const { data } = await supabase
       .from('members_directory')
       .select('*')
       .neq('sector', 'Executive Board')
       .eq('is_active', true)
       .ilike('title', '%Portfolio Manager%')
       .order('sector')
-    allPMs = pmData ?? []
+    allPMs = data ?? []
   }
 
-  const members = sectorMembers ?? []
-  const pm        = members.filter(m => isPM(m))
-  const analysts  = members.filter(m => !isPM(m))
+  const members  = sectorMembers ?? []
+  const pm       = members.filter(isPM)
+  const analysts = members.filter(m => !isPM(m))
 
   return (
     <>
@@ -149,54 +151,55 @@ export default async function SectorPage({ params }: { params: { sector: string 
         </div>
       </section>
 
-      {/* ── Content ──────────────────────────────────────────── */}
       <div className="members-page-content">
-        {members.length === 0 && !isExecutiveBoard ? (
-          <div className="members-empty">
-            <p>Member profiles are being updated. Check back soon.</p>
-            <Link href="/" className="btn" style={{ marginTop: '1.5rem' }}>Back to Home</Link>
-          </div>
-        ) : isExecutiveBoard ? (
+        {/* ── Executive Board layout (unchanged) ──────────────── */}
+        {isExecutiveBoard ? (
           <>
-            {/* Executive Board — Sara + Matt, no header */}
             <div className="members-grid members-grid-leadership">
-              {members.map(m => <MemberCard key={m.id} m={m} sectorSlug={slug} />)}
+              {members.map(m => (
+                // sectorSlug = 'executive-board' so bio back-link returns here
+                <AnalystCard key={m.id} m={m} sectorSlug={slug} />
+              ))}
             </div>
 
-            {/* All Portfolio Managers */}
             {allPMs.length > 0 && (
               <>
                 <SectionHeading>Portfolio Managers</SectionHeading>
                 <div className="members-grid">
                   {allPMs.map(m => (
-                    <MemberCard
-                      key={m.id}
-                      m={m}
-                      sectorSlug={Object.entries(sectorMap).find(([, v]) => v === m.sector)?.[0] ?? slug}
-                                         />
+                    // sectorSlug = 'executive-board' so back-link returns to this page
+                    <AnalystCard key={m.id} m={m} sectorSlug={slug} />
                   ))}
                 </div>
               </>
             )}
           </>
+
+        ) : members.length === 0 ? (
+          <div className="members-empty">
+            <p>Member profiles are being updated. Check back soon.</p>
+            <Link href="/" className="btn" style={{ marginTop: '1.5rem' }}>Back to Home</Link>
+          </div>
+
         ) : (
+          /* ── Sector layout (Blue Hen-inspired) ──────────────── */
           <>
-            {/* Portfolio Manager */}
+            {/* Portfolio Manager — spotlight card, centred */}
             {pm.length > 0 && (
               <>
                 <SectionHeading>Portfolio Manager</SectionHeading>
-                <div className="members-grid members-grid-pm">
-                  {pm.map(m => <MemberCard key={m.id} m={m} sectorSlug={slug} />)}
+                <div className="pm-spotlight-wrap">
+                  {pm.map(m => <PMSpotlight key={m.id} m={m} sectorSlug={slug} />)}
                 </div>
               </>
             )}
 
-            {/* Analysts */}
+            {/* Analysts — compact grid */}
             {analysts.length > 0 && (
               <>
                 <SectionHeading>Analysts</SectionHeading>
-                <div className="members-grid">
-                  {analysts.map(m => <MemberCard key={m.id} m={m} sectorSlug={slug} />)}
+                <div className="members-grid members-grid-analysts">
+                  {analysts.map(m => <AnalystCard key={m.id} m={m} sectorSlug={slug} />)}
                 </div>
               </>
             )}
