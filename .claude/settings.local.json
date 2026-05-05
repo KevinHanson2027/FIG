@@ -6,7 +6,9 @@
       "Bash(npm install *)",
       "Bash(npx next *)",
       "Bash(git add *)",
-      "Bash(git commit -m ' *)"
+      "Bash(git commit -m ' *)",
+      "Bash(git rm *)",
+      "Bash(git commit -m 'Remove legacy index.html so Vercel builds Next.js correctly *)"
     ]
   }
 }
