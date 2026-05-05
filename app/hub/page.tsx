@@ -1,50 +1,35 @@
-import { createClient } from '@/lib/supabase/server'
+'use client'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { createClient } from '@/lib/supabase/client'
 
-export const metadata = { title: 'Member Hub' }
+const fileIcon: Record<string, string> = {
+  pdf: '📄', xlsx: '📊', xls: '📊', csv: '📈', docx: '📝', link: '🔗', default: '📎',
+}
 
-export default async function HubDashboard() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+type Resource     = { id: string; title: string; file_url: string | null; file_type: string | null; created_at: string }
+type Announcement = { id: string; title: string; body: string; created_at: string }
 
-  let profile = null
-  let resources: { id: string; title: string; file_url: string | null; file_type: string | null; created_at: string }[] = []
-  let announcements: { id: string; title: string; body: string; created_at: string }[] = []
+export default function HubDashboard() {
+  const supabase = createClient()
+  const [resources, setResources] = useState<Resource[]>([])
+  const [announcements, setAnnouncements] = useState<Announcement[]>([])
 
-  if (user) {
-    const { data: p } = await supabase.from('profiles').select('name, sector, role').eq('id', user.id).single()
-    profile = p
+  useEffect(() => {
+    supabase.from('resources').select('id,title,file_url,file_type,created_at')
+      .order('created_at', { ascending: false }).limit(5)
+      .then(({ data }) => setResources(data ?? []))
 
-    const { data: r } = await supabase
-      .from('resources')
-      .select('id, title, file_url, file_type, created_at')
-      .or(`sector.is.null,sector.eq.${p?.sector ?? ''}`)
-      .order('created_at', { ascending: false })
-      .limit(5)
-    resources = r ?? []
-
-    const { data: a } = await supabase
-      .from('announcements')
-      .select('id, title, body, created_at')
-      .or(`sector.is.null,sector.eq.${p?.sector ?? ''}`)
-      .order('created_at', { ascending: false })
-      .limit(5)
-    announcements = a ?? []
-  }
-
-  const fileIcon: Record<string, string> = {
-    pdf: '📄', xlsx: '📊', xls: '📊', csv: '📈', docx: '📝', link: '🔗', default: '📎',
-  }
+    supabase.from('announcements').select('id,title,body,created_at')
+      .order('created_at', { ascending: false }).limit(5)
+      .then(({ data }) => setAnnouncements(data ?? []))
+  }, [])
 
   return (
     <>
       <div className="hub-welcome">
-        <h1>Welcome back{profile?.name ? `, ${profile.name}` : ''}! 👋</h1>
-        <p>
-          {profile?.sector
-            ? `You're viewing the ${profile.sector} sector hub.`
-            : 'Access your resources, tools, and team updates below.'}
-        </p>
+        <h1>Welcome to the FIG Member Hub 👋</h1>
+        <p>Access resources, financial tools, and team updates below.</p>
       </div>
 
       <div className="hub-grid">
@@ -69,8 +54,7 @@ export default async function HubDashboard() {
             <div className="hub-empty"><p>No files uploaded yet.</p></div>
           ) : (
             resources.map(r => {
-              const ext = r.file_type ?? 'default'
-              const icon = fileIcon[ext] ?? fileIcon.default
+              const icon = fileIcon[r.file_type ?? 'default'] ?? fileIcon.default
               return (
                 <a key={r.id} href={r.file_url ?? '#'} target="_blank" rel="noopener noreferrer" className="hub-resource-item">
                   <div className="hub-resource-icon">{icon}</div>
@@ -90,11 +74,11 @@ export default async function HubDashboard() {
         <div className="hub-card">
           <h3>🔗 Quick Links</h3>
           {[
-            { label: 'View Portfolio Holdings', href: '/holdings' },
-            { label: 'Portfolio Reports', href: '/portfolio-reporting' },
-            { label: 'Market Tools', href: '/hub/tools' },
-            { label: 'FIG LinkedIn', href: 'https://www.linkedin.com/company/fairfield-investment-group/' },
-            { label: 'Public Website', href: '/' },
+            { label: 'View Portfolio Holdings',  href: '/holdings' },
+            { label: 'Portfolio Reports',         href: '/portfolio-reporting' },
+            { label: 'Market Tools',              href: '/hub/tools' },
+            { label: 'FIG LinkedIn',              href: 'https://www.linkedin.com/company/fairfield-investment-group/' },
+            { label: 'Public Website',            href: '/' },
           ].map(link => (
             <a key={link.href} href={link.href} target={link.href.startsWith('http') ? '_blank' : '_self'} rel="noopener noreferrer" className="hub-resource-item">
               <div className="hub-resource-icon">🌐</div>

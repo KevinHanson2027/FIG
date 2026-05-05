@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cp -r \"Website Assets\" \"public/\")",
+      "Bash(cp -r \"New Headshots\" \"public/\")",
+      "Bash(npm install *)",
+      "Bash(npx next *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)"
+    ]
+  }
+}

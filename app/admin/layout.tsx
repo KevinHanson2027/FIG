@@ -1,15 +1,13 @@
 'use client'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
 
 const navItems = [
-  { href: '/admin',            icon: '📊', label: 'Dashboard' },
-  { href: '/admin/members',    icon: '👥', label: 'Members Directory' },
-  { href: '/admin/resources',  icon: '📁', label: 'Resources & Files' },
-  { href: '/admin/content',    icon: '✏️', label: 'Page Content' },
-  { href: '/admin/users',      icon: '🔐', label: 'User Accounts' },
-  { href: '/admin/announcements', icon: '📢', label: 'Announcements' },
+  { href: '/admin',                icon: '📊', label: 'Dashboard' },
+  { href: '/admin/members',        icon: '👥', label: 'Members Directory' },
+  { href: '/admin/resources',      icon: '📁', label: 'Resources & Files' },
+  { href: '/admin/content',        icon: '✏️', label: 'Page Content' },
+  { href: '/admin/announcements',  icon: '📢', label: 'Announcements' },
 ]
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -17,8 +15,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const router = useRouter()
 
   async function handleSignOut() {
-    const supabase = createClient()
-    await supabase.auth.signOut()
+    await fetch('/api/auth/logout', { method: 'POST' })
     router.push('/login')
   }
 

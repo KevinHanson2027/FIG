@@ -1,16 +1,10 @@
 'use client'
 import { useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
-import { Suspense } from 'react'
+import { useRouter } from 'next/navigation'
 
-function LoginForm() {
+export default function LoginPage() {
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const nextUrl = searchParams.get('next') || '/hub'
-
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
+  const [key, setKey] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -19,28 +13,20 @@ function LoginForm() {
     setLoading(true)
     setError('')
 
-    const supabase = createClient()
-    const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password })
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key }),
+    })
 
-    if (authError) {
-      setError('Invalid email or password. Please try again.')
+    if (!res.ok) {
+      setError('Incorrect access key. Please try again.')
       setLoading(false)
       return
     }
 
-    if (data.user) {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', data.user.id)
-        .single()
-
-      if (profile?.role === 'admin') {
-        router.push('/admin')
-      } else {
-        router.push(nextUrl)
-      }
-    }
+    const { role } = await res.json()
+    router.push(role === 'admin' ? '/admin' : '/hub')
   }
 
   return (
@@ -50,38 +36,27 @@ function LoginForm() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/Website Assets/Logos/FIG Logo.png" alt="FIG Logo" />
           <h1>Fairfield Investment Group</h1>
-          <p>Sign in to access your account</p>
+          <p>Enter your access key to continue</p>
         </div>
 
         {error && <div className="login-error">{error}</div>}
 
-        <form className="login-form" onSubmit={handleLogin}>
+        <form onSubmit={handleLogin}>
           <div className="admin-form-group">
-            <label htmlFor="email">Email Address</label>
+            <label htmlFor="key">Access Key</label>
             <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@fairfield.edu"
-              required
-              autoComplete="email"
-            />
-          </div>
-          <div className="admin-form-group">
-            <label htmlFor="password">Password</label>
-            <input
-              id="password"
+              id="key"
               type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              value={key}
+              onChange={e => setKey(e.target.value)}
               placeholder="••••••••"
               required
               autoComplete="current-password"
+              autoFocus
             />
           </div>
           <button type="submit" className="login-btn" disabled={loading}>
-            {loading ? 'Signing in…' : 'Sign In'}
+            {loading ? 'Verifying…' : 'Sign In'}
           </button>
         </form>
 
@@ -90,13 +65,5 @@ function LoginForm() {
         </div>
       </div>
     </div>
-  )
-}
-
-export default function LoginPage() {
-  return (
-    <Suspense fallback={<div className="login-page"><div className="login-card">Loading…</div></div>}>
-      <LoginForm />
-    </Suspense>
   )
 }
