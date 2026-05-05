@@ -15,7 +15,7 @@ const sectorMap: Record<string, string> = {
   'marketing':        'Marketing',
 }
 
-const MEMBER_HERO = '/Website Assets/About/Serious Group Photo.png'
+const MEMBER_HERO = '/Website Assets/Group Photos/Smiling Group Photo %231.JPG'
 
 type Member = {
   id: string
