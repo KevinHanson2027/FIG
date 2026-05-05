@@ -15,19 +15,7 @@ const sectorMap: Record<string, string> = {
   'marketing':        'Marketing',
 }
 
-// # in filenames must be encoded as %23 or browsers treat it as a fragment
-const sectorHeroes: Record<string, string> = {
-  'executive-board':  '/Website Assets/Group Photos/Serious Group Photo %231.JPG',
-  'consumers':        '/Website Assets/Group Photos/Smiling Group Photo %231.JPG',
-  'energy-utilities': '/Website Assets/Group Photos/Serious Group Photo %232.JPG',
-  'financials':       '/Website Assets/Group Photos/Smiling Group Photo %232.JPG',
-  'fixed-income':     '/Website Assets/Group Photos/Serious Group Photo %233.JPG',
-  'healthcare':       '/Website Assets/Group Photos/Smiling Group Photo %233.JPG',
-  'industrials':      '/Website Assets/Group Photos/Group Photo Side Angel.JPG',
-  'real-estate':      '/Website Assets/Group Photos/Smiling Group Photo %231.JPG',
-  'technology':       '/Website Assets/Group Photos/Serious Group Photo %233.JPG',
-  'marketing':        '/Website Assets/Group Photos/Smiling Group Photo %232.JPG',
-}
+const MEMBER_HERO = '/Website Assets/About/Serious Group Photo.png'
 
 export async function generateMetadata({
   params,
@@ -53,7 +41,6 @@ export default async function MemberBioPage({
 }) {
   const slug       = params.sector
   const sectorName = sectorMap[slug] ?? slug
-  const heroImage  = sectorHeroes[slug] ?? '/Website Assets/Group Photos/Serious Group Photo #1.JPG'
 
   const supabase = await createClient()
   const { data: member } = await supabase
@@ -82,7 +69,7 @@ export default async function MemberBioPage({
       {/* ── Small hero ──────────────────────────────────────── */}
       <section className="bio-hero">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={heroImage} alt={sectorName} />
+        <img src={MEMBER_HERO} alt={sectorName} />
         <div className="bio-hero-overlay" />
         <div className="bio-hero-text">
           <h1>{member.name}</h1>

@@ -15,19 +15,7 @@ const sectorMap: Record<string, string> = {
   'marketing':        'Marketing',
 }
 
-// # in filenames must be %23 or browsers treat it as a URL fragment
-const sectorHeroes: Record<string, string> = {
-  'executive-board':  '/Website Assets/Group Photos/Serious Group Photo %231.JPG',
-  'consumers':        '/Website Assets/Group Photos/Smiling Group Photo %231.JPG',
-  'energy-utilities': '/Website Assets/Group Photos/Serious Group Photo %232.JPG',
-  'financials':       '/Website Assets/Group Photos/Smiling Group Photo %232.JPG',
-  'fixed-income':     '/Website Assets/Group Photos/Serious Group Photo %233.JPG',
-  'healthcare':       '/Website Assets/Group Photos/Smiling Group Photo %233.JPG',
-  'industrials':      '/Website Assets/Group Photos/Group Photo Side Angel.JPG',
-  'real-estate':      '/Website Assets/Group Photos/Smiling Group Photo %231.JPG',
-  'technology':       '/Website Assets/Group Photos/Serious Group Photo %233.JPG',
-  'marketing':        '/Website Assets/Group Photos/Smiling Group Photo %232.JPG',
-}
+const MEMBER_HERO = '/Website Assets/About/Serious Group Photo.png'
 
 type Member = {
   id: string
@@ -112,7 +100,6 @@ function PMSpotlight({ m, sectorSlug }: { m: Member; sectorSlug: string }) {
 export default async function SectorPage({ params }: { params: { sector: string } }) {
   const slug           = params.sector
   const sectorName     = sectorMap[slug] ?? slug
-  const heroImage      = sectorHeroes[slug] ?? '/Website Assets/Group Photos/Serious Group Photo %231.JPG'
   const isExecutiveBoard = slug === 'executive-board'
   const supabase       = await createClient()
 
@@ -145,7 +132,7 @@ export default async function SectorPage({ params }: { params: { sector: string 
       {/* ── Hero ─────────────────────────────────────────────── */}
       <section className="members-hero">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={heroImage} alt={`${sectorName} — Fairfield Investment Group`} />
+        <img src={MEMBER_HERO} alt={`${sectorName} — Fairfield Investment Group`} />
         <div className="members-hero-content">
           <h1>{sectorName}</h1>
         </div>
