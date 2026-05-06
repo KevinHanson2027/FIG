@@ -11,7 +11,13 @@
       "Bash(git commit -m 'Remove legacy index.html so Vercel builds Next.js correctly *)",
       "Bash(git push *)",
       "Bash(git commit -m 'Add member directory seed SQL \\(51 members, all sectors\\) *)",
-      "Bash(git commit -m 'Switch member hero to smiling group photo *)"
+      "Bash(git commit -m 'Switch member hero to smiling group photo *)",
+      "Bash(dir /s/b \"C:\\\\Users\\\\16313\\\\Downloads\\\\FIG\\\\FIG\")",
+      "Bash(findstr /E \"\\\\.tsx$|\\\\.ts$|\\\\.jsx$|\\\\.js$\")",
+      "Bash(findstr /v node_modules)",
+      "Bash(findstr /v \".next\")",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\16313\\\\Downloads\\\\FIG\\\\FIG\\\\app\" -Recurse -Directory | Select-Object -First 30 | ForEach-Object {$_.FullName.Replace\\('C:\\\\Users\\\\16313\\\\Downloads\\\\FIG\\\\FIG\\\\app', 'app'\\)})",
+      "Bash(npx tsc *)"
     ]
   }
 }
