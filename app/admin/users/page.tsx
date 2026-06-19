@@ -1,4 +1,4 @@
-export default function AdminUsersPage() {
+﻿export default function AdminUsersPage() {
   return (
     <>
       <div className="admin-header">
@@ -13,7 +13,7 @@ export default function AdminUsersPage() {
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
           <div style={{ padding: '1.5rem', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '10px' }}>
-            <h3 style={{ color: '#dc2626', marginBottom: '0.75rem', fontSize: '1.1rem' }}>🔑 Admin Key</h3>
+            <h3 style={{ color: '#C80F2E', marginBottom: '0.75rem', fontSize: '1.1rem' }}>🔑 Admin Key</h3>
             <p style={{ fontSize: '0.9rem', color: '#555', lineHeight: '1.6', marginBottom: '0.75rem' }}>
               Whoever has the Admin Key lands at <code style={{ background: '#fee2e2', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>/admin</code> after login.
             </p>

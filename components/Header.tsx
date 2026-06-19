@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import Link from 'next/link'
 
 export default function Header() {
@@ -8,7 +8,7 @@ export default function Header() {
         <Link href="/" className="logo">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/Website Assets/Logos/FIG Logo.png"
+            src="/Website Assets/Logos/FIG Primary Logo.svg"
             alt="Fairfield Investment Group"
             style={{ height: '50px', width: 'auto' }}
           />

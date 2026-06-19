@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
@@ -368,7 +368,7 @@ function ImageField({
         onClick={() => inputRef.current?.click()}
         disabled={uploading}
         style={{
-          padding: '0.7rem 1.5rem', background: '#e62d2e', color: 'white',
+          padding: '0.7rem 1.5rem', background: '#C80F2E', color: 'white',
           border: 'none', borderRadius: '6px', cursor: 'pointer',
           fontSize: '0.9rem', fontWeight: 600,
         }}
@@ -385,7 +385,7 @@ function ImageField({
       />
 
       {uploadError && (
-        <p style={{ color: '#dc2626', fontSize: '0.8rem', marginTop: '0.5rem' }}>{uploadError}</p>
+        <p style={{ color: '#C80F2E', fontSize: '0.8rem', marginTop: '0.5rem' }}>{uploadError}</p>
       )}
 
       {/* Secondary: paste URL toggle */}

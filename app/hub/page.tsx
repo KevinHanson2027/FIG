@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
@@ -66,7 +66,7 @@ export default function HubDashboard() {
               )
             })
           )}
-          <Link href="/hub/resources" style={{ display: 'block', textAlign: 'center', marginTop: '1rem', fontSize: '0.85rem', color: '#e62d2e', textDecoration: 'none' }}>
+          <Link href="/hub/resources" style={{ display: 'block', textAlign: 'center', marginTop: '1rem', fontSize: '0.85rem', color: '#C80F2E', textDecoration: 'none' }}>
             View all resources →
           </Link>
         </div>

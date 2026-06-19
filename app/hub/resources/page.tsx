@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
@@ -51,9 +51,9 @@ export default function HubResourcesPage() {
                 padding: '0.35rem 0.85rem',
                 borderRadius: '20px',
                 border: '1px solid',
-                borderColor: filter === s ? '#e62d2e' : '#ddd',
+                borderColor: filter === s ? '#C80F2E' : '#ddd',
                 background: filter === s ? '#fee2e2' : 'white',
-                color: filter === s ? '#e62d2e' : '#555',
+                color: filter === s ? '#C80F2E' : '#555',
                 fontSize: '0.8rem',
                 cursor: 'pointer',
               }}
@@ -89,7 +89,7 @@ export default function HubResourcesPage() {
                     {r.sector ?? 'All Members'} · {new Date(r.created_at).toLocaleDateString()}
                   </div>
                 </div>
-                <span style={{ color: '#e62d2e', fontSize: '0.85rem', flexShrink: 0, alignSelf: 'center' }}>
+                <span style={{ color: '#C80F2E', fontSize: '0.85rem', flexShrink: 0, alignSelf: 'center' }}>
                   {r.file_type === 'link' ? 'Open →' : 'Download →'}
                 </span>
               </a>

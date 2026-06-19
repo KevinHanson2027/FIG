@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+﻿import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import type { Metadata } from 'next'
 
@@ -52,7 +52,7 @@ export default async function MemberBioPage({
   if (!member) {
     return (
       <div style={{ textAlign: 'center', padding: '6rem 2rem' }}>
-        <h2 style={{ color: '#dc2626', marginBottom: '1rem' }}>Member not found</h2>
+        <h2 style={{ color: '#C80F2E', marginBottom: '1rem' }}>Member not found</h2>
         <Link href={`/members/${slug}`} className="btn">← Back to {sectorName}</Link>
       </div>
     )
@@ -82,7 +82,7 @@ export default async function MemberBioPage({
         <div className="bio-photo">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={member.headshot_url ?? '/Website Assets/Logos/FIG Logo.png'}
+            src={member.headshot_url ?? '/Website Assets/Logos/FIG Primary Logo.svg'}
             alt={member.name}
           />
         </div>
@@ -124,7 +124,7 @@ export default async function MemberBioPage({
           <div style={{ marginTop: '2.5rem' }}>
             <Link
               href={`/members/${slug}`}
-              style={{ color: '#e62d2e', textDecoration: 'none', fontSize: '0.9rem', fontWeight: 600 }}
+              style={{ color: '#C80F2E', textDecoration: 'none', fontSize: '0.9rem', fontWeight: 600 }}
             >
               ← Back to {sectorName}
             </Link>

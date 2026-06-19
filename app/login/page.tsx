@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
@@ -34,7 +34,7 @@ export default function LoginPage() {
       <div className="login-card">
         <div className="login-logo">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/Website Assets/Logos/FIG Logo.png" alt="FIG Logo" />
+          <img src="/Website Assets/Logos/FIG Primary Logo.svg" alt="FIG Logo" />
           <h1>Fairfield Investment Group</h1>
           <p>Enter your access key to continue</p>
         </div>

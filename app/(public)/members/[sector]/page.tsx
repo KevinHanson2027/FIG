@@ -53,7 +53,7 @@ function AnalystCard({ m, sectorSlug }: { m: Member; sectorSlug: string }) {
       <Link href={bioUrl} className="member-card-photo-link">
         <div className="member-card-photo-wrap">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={m.headshot_url ?? '/Website Assets/Logos/FIG Logo.png'} alt={m.name} className="member-card-photo" />
+          <img src={m.headshot_url ?? '/Website Assets/Logos/FIG Primary Logo.svg'} alt={m.name} className="member-card-photo" />
         </div>
       </Link>
       <div className="member-card-body">
@@ -79,7 +79,7 @@ function PMSpotlight({ m, sectorSlug }: { m: Member; sectorSlug: string }) {
       <Link href={bioUrl} className="pm-spotlight-photo-link">
         <div className="pm-spotlight-photo-wrap">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={m.headshot_url ?? '/Website Assets/Logos/FIG Logo.png'} alt={m.name} className="pm-spotlight-photo" />
+          <img src={m.headshot_url ?? '/Website Assets/Logos/FIG Primary Logo.svg'} alt={m.name} className="pm-spotlight-photo" />
         </div>
       </Link>
       <div className="pm-spotlight-body">
