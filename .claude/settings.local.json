@@ -31,7 +31,12 @@
       "Bash(grep -ril \"mckenna\" .)",
       "Bash(find \"./New Headshots/Current Roster\" -type f)",
       "Bash(find . -not -path \"*/node_modules/*\" -not -path \"*/.git/*\" -not -path \"*/.next/*\" \\\\\\( -iname \"*spero*\" -o -iname \"*mahoney*\" -o -iname \"*simpson*\" -o -iname \"*lapella*\" -o -iname \"*driver*\" -o -iname \"*tedeschi*\" -o -iname \"*moran*\" \\\\\\))",
-      "Bash(xargs grep -liE \"spero|mahoney|simpson|lapella|driver|tedeschi|moran|taverna\")"
+      "Bash(xargs grep -liE \"spero|mahoney|simpson|lapella|driver|tedeschi|moran|taverna\")",
+      "Bash(node scripts/check-members.mjs)",
+      "Bash(node -e ' *)",
+      "Bash(node scripts/apply-roster-update.mjs)",
+      "Bash(rm scripts/apply-roster-update.mjs scripts/check-members.mjs)",
+      "Bash(rmdir scripts *)"
     ]
   }
 }
