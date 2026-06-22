@@ -114,7 +114,6 @@ export default async function MemberBioPage({
                 target="_blank"
                 rel="noopener noreferrer"
                 className="bio-btn"
-                style={{ backgroundColor: '#0a66c2' }}
               >
                 LinkedIn
               </a>

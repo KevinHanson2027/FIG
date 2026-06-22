@@ -36,7 +36,10 @@
       "Bash(node -e ' *)",
       "Bash(node scripts/apply-roster-update.mjs)",
       "Bash(rm scripts/apply-roster-update.mjs scripts/check-members.mjs)",
-      "Bash(rmdir scripts *)"
+      "Bash(rmdir scripts *)",
+      "Bash(npm run *)",
+      "Bash(node scripts/add-bios.mjs)",
+      "Bash(rm -f scripts/add-bios.mjs)"
     ]
   }
 }

@@ -10,7 +10,7 @@
 }
 
 body {
-    font-family: 'Arial', sans-serif;
+    font-family: var(--font-eb-garamond), Georgia, 'Times New Roman', serif;
     line-height: 1.6;
     color: #333;
     background-color: #fff;
@@ -855,24 +855,11 @@ body {
   transform: translateY(-1px);
 }
 
-.member-card-btn-email {
+.member-card-btn-email,
+.member-card-btn-linkedin,
+.member-card-btn-bio {
   background: #C80F2E;
   color: #fff !important;
-}
-
-.member-card-btn-linkedin {
-  background: #0a66c2;
-  color: #fff !important;
-}
-
-.member-card-btn-bio {
-  background: #f3f4f6;
-  color: #333 !important;
-  border: 1px solid #ddd;
-}
-
-.member-card-btn-bio:hover {
-  background: #e5e7eb;
 }
 
 .member-card-photo-link {
