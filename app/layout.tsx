@@ -16,7 +16,7 @@ export const metadata: Metadata = {
     default: 'Fairfield Investment Group',
   },
   description: "Fairfield University's premier student-run investment fund, established in 2013.",
-  icons: { icon: '/Website Assets/Logos/FIG Primary Logo.svg' },
+  icons: { icon: '/Website Assets/FIG Favicon.png' },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -24,7 +24,7 @@ Caleb Birchem - Sales Development Representative, GreenIRR`).split('\n').filter(
     <>
       <section className="about-hero">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={c('hero_image', '/Website Assets/About/About Header Background.JPG')} alt="Fairfield Investment Group - About" />
+        <img src={c('hero_image', '/Website Assets/About/Serious Group Photo.png')} alt="Fairfield Investment Group - About" />
         <div className="about-hero-content">
           <h1>{c('hero_title', 'Established in 2013')}</h1>
           <p>{c('hero_subtitle', 'Educating Fairfield students through real investing experience and financial leadership.')}</p>
@@ -41,7 +41,7 @@ Caleb Birchem - Sales Development Representative, GreenIRR`).split('\n').filter(
           </div>
           <div className="about-image">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={c('about_image', '/Website Assets/Group Photos/Smiling Group Photo #1.JPG')} alt="FIG Group" />
+            <img src={c('about_image', '/Website Assets/Group Photos/Smiling Group Photo %231.JPG')} alt="FIG Group" />
           </div>
         </div>
       </section>
