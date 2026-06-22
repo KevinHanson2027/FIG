@@ -1212,6 +1212,42 @@ body {
 .admin-table tr:last-child td { border-bottom: none; }
 .admin-table tr:hover td { background: #fafafa; }
 
+.admin-section-wide { padding: 2rem 1.25rem; }
+
+.admin-table-scroll { overflow-x: auto; }
+
+.admin-table-roomy th, .admin-table-roomy td { white-space: nowrap; }
+.admin-table-roomy td:nth-child(1) { white-space: normal; min-width: 200px; }
+.admin-table-roomy th:nth-child(1) { min-width: 200px; }
+.admin-table-roomy th:nth-child(2), .admin-table-roomy td:nth-child(2) { min-width: 220px; }
+.admin-table-roomy th:nth-child(3), .admin-table-roomy td:nth-child(3) { min-width: 190px; }
+.admin-table-roomy th:nth-child(4), .admin-table-roomy td:nth-child(4) { min-width: 220px; }
+.admin-table-roomy td { padding: 0.85rem 1rem; }
+
+.admin-th-sortable { cursor: pointer; user-select: none; }
+.admin-th-sortable:hover { color: #1a1a2e; }
+.admin-sort-arrow { display: inline-block; opacity: 0.5; font-size: 0.75rem; margin-left: 0.2rem; }
+
+.admin-filter-row th {
+  background: #fff;
+  padding: 0.5rem 1rem 0.85rem;
+  border-bottom: 1px solid #eee;
+}
+.admin-filter-row input,
+.admin-filter-row select {
+  width: 100%;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: normal;
+  color: #333;
+}
+.admin-filter-row input:focus,
+.admin-filter-row select:focus { outline: none; border-color: #C80F2E; }
+
 .admin-badge {
   display: inline-block;
   padding: 0.25rem 0.6rem;
