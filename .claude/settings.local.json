@@ -17,7 +17,21 @@
       "Bash(findstr /v node_modules)",
       "Bash(findstr /v \".next\")",
       "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\16313\\\\Downloads\\\\FIG\\\\FIG\\\\app\" -Recurse -Directory | Select-Object -First 30 | ForEach-Object {$_.FullName.Replace\\('C:\\\\Users\\\\16313\\\\Downloads\\\\FIG\\\\FIG\\\\app', 'app'\\)})",
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "Bash(grep -rn -i \"Haimoff\\\\|Connell\\\\|Hamner\\\\|Fitz\" \"public/New Headshots/Current Roster\")",
+      "Bash(grep -rn -i \"Haimoff\\\\|Connell\\\\|Hamner\\\\|Fitz\" \"New Headshots/Current Roster\")",
+      "Bash(ls \"New Headshots/Current Roster\")",
+      "Bash(ls \"public/New Headshots/Current Roster\")",
+      "PowerShell(Copy-Item \"c:\\\\Users\\\\16313\\\\Downloads\\\\FIG\\\\FIG\\\\New Headshots\\\\Charles Hamner.png\" \"c:\\\\Users\\\\16313\\\\Downloads\\\\FIG\\\\FIG\\\\public\\\\Website Assets\\\\Members\\\\Technology\\\\Charles Hamner.png\")",
+      "Bash(find \"public/Website Assets/Members\" -iname \"*Industrial*\" -type d)",
+      "Bash(ls -la \"public/Website Assets/Members/Industrials & Materials\")",
+      "Bash(find . -iname \"seed*.sql\" -o -iname \"*.sql\")",
+      "Bash(grep -ril \"nogalo\" .)",
+      "Bash(grep -ril \"alfonso\" .)",
+      "Bash(grep -ril \"mckenna\" .)",
+      "Bash(find \"./New Headshots/Current Roster\" -type f)",
+      "Bash(find . -not -path \"*/node_modules/*\" -not -path \"*/.git/*\" -not -path \"*/.next/*\" \\\\\\( -iname \"*spero*\" -o -iname \"*mahoney*\" -o -iname \"*simpson*\" -o -iname \"*lapella*\" -o -iname \"*driver*\" -o -iname \"*tedeschi*\" -o -iname \"*moran*\" \\\\\\))",
+      "Bash(xargs grep -liE \"spero|mahoney|simpson|lapella|driver|tedeschi|moran|taverna\")"
     ]
   }
 }
