@@ -42,7 +42,11 @@
       "Bash(rm -f scripts/add-bios.mjs)",
       "Bash(python3 -c ' *)",
       "Bash(python3 -m pip install --quiet pillow)",
-      "Bash(mkdir -p /tmp/photo_preview)"
+      "Bash(mkdir -p /tmp/photo_preview)",
+      "Bash(git checkout *)",
+      "Bash(powershell -Command \"Stop-Process -Id 45480 -Force\")",
+      "Bash(git fetch *)",
+      "Bash(curl -s -o /tmp/live_about_photo.png -w \"HTTP %{http_code}, size %{size_download} bytes\\\\n\" \"https://www.fairfieldinvestmentgroup.org/Website%20Assets/About/Serious%20Group%20Photo.png\")"
     ]
   }
 }

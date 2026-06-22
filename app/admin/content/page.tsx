@@ -96,7 +96,7 @@ const PAGES: PageConfig[] = [
           { key: 'about_p1',    label: 'Paragraph 1', type: 'textarea', default: "The Fairfield Investment Group (FIG) is Fairfield University's premier student-run fund. The group was first established with a small group of ten students and has since grown exponentially, developing a robust network of alumni and maintaining a significant presence on campus." },
           { key: 'about_p2',    label: 'Paragraph 2', type: 'textarea', default: "FIG's core mandate is to educate all students at Fairfield on the skills needed to become a proficient investor. We achieve this by providing a unique, hands-on opportunity to research and pitch investments, effectively bridging the gap between classroom theory and real-world application." },
           { key: 'about_p3',    label: 'Paragraph 3', type: 'textarea', default: 'Our analysts and members regularly spend time discussing the linkages in the economy, the impact of major market players, central bank policy, and other current events that actively affect financial markets.' },
-          { key: 'about_image', label: 'Photo',        type: 'image',    default: '/Website Assets/About/Serious Group Photo.png' },
+          { key: 'about_image', label: 'Photo',        type: 'image',    default: '/Website Assets/Group Photos/Smiling Group Photo #1.JPG' },
         ],
       },
       {

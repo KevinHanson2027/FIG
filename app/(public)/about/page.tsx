@@ -41,7 +41,7 @@ Caleb Birchem - Sales Development Representative, GreenIRR`).split('\n').filter(
           </div>
           <div className="about-image">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={c('about_image', '/Website Assets/About/Serious Group Photo.png')} alt="FIG Group" />
+            <img src={c('about_image', '/Website Assets/Group Photos/Smiling Group Photo #1.JPG')} alt="FIG Group" />
           </div>
         </div>
       </section>
