@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+﻿import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import type { Metadata } from 'next'
 
@@ -16,6 +16,7 @@ const sectorMap: Record<string, string> = {
 }
 
 const MEMBER_HERO = '/Website Assets/Group Photos/Smiling Group Photo %231.JPG'
+const FIG_PLACEHOLDER = '/Website Assets/Logos/FIG Logo.png'
 
 type Member = {
   id: string
@@ -53,7 +54,11 @@ function AnalystCard({ m, sectorSlug }: { m: Member; sectorSlug: string }) {
       <Link href={bioUrl} className="member-card-photo-link">
         <div className="member-card-photo-wrap">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={m.headshot_url ?? '/Website Assets/Logos/FIG Primary Logo.svg'} alt={m.name} className="member-card-photo" />
+          <img
+            src={m.headshot_url ?? FIG_PLACEHOLDER}
+            alt={m.name}
+            className={m.headshot_url ? 'member-card-photo' : 'member-card-photo is-placeholder'}
+          />
         </div>
       </Link>
       <div className="member-card-body">
@@ -79,7 +84,11 @@ function PMSpotlight({ m, sectorSlug }: { m: Member; sectorSlug: string }) {
       <Link href={bioUrl} className="pm-spotlight-photo-link">
         <div className="pm-spotlight-photo-wrap">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={m.headshot_url ?? '/Website Assets/Logos/FIG Primary Logo.svg'} alt={m.name} className="pm-spotlight-photo" />
+          <img
+            src={m.headshot_url ?? FIG_PLACEHOLDER}
+            alt={m.name}
+            className={m.headshot_url ? 'pm-spotlight-photo' : 'pm-spotlight-photo is-placeholder'}
+          />
         </div>
       </Link>
       <div className="pm-spotlight-body">

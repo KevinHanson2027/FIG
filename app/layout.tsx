@@ -1,12 +1,22 @@
-﻿import type { Metadata } from 'next'
-import { EB_Garamond } from 'next/font/google'
+import type { Metadata } from 'next'
+import { Libre_Baskerville, Figtree } from 'next/font/google'
 import './globals.css'
 
-const ebGaramond = EB_Garamond({
+/* Primary typography — headings, brand marks, display text */
+const libreBaskerville = Libre_Baskerville({
   subsets: ['latin'],
-  weight: ['400', '500', '600', '700', '800'],
+  weight: ['400', '700'],
   style: ['normal', 'italic'],
-  variable: '--font-eb-garamond',
+  variable: '--font-libre-baskerville',
+  display: 'swap',
+})
+
+/* Supporting typography — body copy, navigation, UI */
+const figtree = Figtree({
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600', '700', '800'],
+  style: ['normal', 'italic'],
+  variable: '--font-figtree',
   display: 'swap',
 })
 
@@ -21,7 +31,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={ebGaramond.variable}>
+    <html lang="en" className={`${libreBaskerville.variable} ${figtree.variable}`}>
       <body>{children}</body>
     </html>
   )

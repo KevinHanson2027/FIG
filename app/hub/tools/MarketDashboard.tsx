@@ -329,7 +329,7 @@ function QuoteTable({ symbols, title }: { symbols: string[]; title: string }) {
       ) : quotes.length === 0 ? (
         <div style={{ padding: '1rem', textAlign: 'center', color: '#888', fontSize: '0.85rem' }}>
           Market data unavailable.{' '}
-          <a href="https://finance.yahoo.com" target="_blank" rel="noopener noreferrer" style={{ color: '#C80F2E' }}>
+          <a href="https://finance.yahoo.com" target="_blank" rel="noopener noreferrer" style={{ color: '#C8102E' }}>
             Open Yahoo Finance →
           </a>
         </div>
@@ -399,9 +399,9 @@ function SymbolSelector({
               padding: '0.3rem 0.75rem',
               borderRadius: '20px',
               border: '1px solid',
-              borderColor: active === s ? '#C80F2E' : '#ddd',
+              borderColor: active === s ? '#C8102E' : '#ddd',
               background: active === s ? '#fee2e2' : 'white',
-              color: active === s ? '#C80F2E' : '#333',
+              color: active === s ? '#C8102E' : '#333',
               fontSize: '0.8rem',
               cursor: 'pointer',
             }}
@@ -424,7 +424,7 @@ function SymbolSelector({
           />
           <button
             type="submit"
-            style={{ padding: '0.3rem 0.75rem', borderRadius: '20px', background: '#C80F2E', color: 'white', border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
+            style={{ padding: '0.3rem 0.75rem', borderRadius: '20px', background: '#C8102E', color: 'white', border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
           >
             Go
           </button>

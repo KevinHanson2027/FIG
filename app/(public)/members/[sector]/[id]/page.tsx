@@ -52,7 +52,7 @@ export default async function MemberBioPage({
   if (!member) {
     return (
       <div style={{ textAlign: 'center', padding: '6rem 2rem' }}>
-        <h2 style={{ color: '#C80F2E', marginBottom: '1rem' }}>Member not found</h2>
+        <h2 style={{ color: '#C8102E', marginBottom: '1rem' }}>Member not found</h2>
         <Link href={`/members/${slug}`} className="btn">← Back to {sectorName}</Link>
       </div>
     )
@@ -82,8 +82,9 @@ export default async function MemberBioPage({
         <div className="bio-photo">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={member.headshot_url ?? '/Website Assets/Logos/FIG Primary Logo.svg'}
+            src={member.headshot_url ?? '/Website Assets/Logos/FIG Logo.png'}
             alt={member.name}
+            className={member.headshot_url ? undefined : 'is-placeholder'}
           />
         </div>
 
@@ -123,7 +124,7 @@ export default async function MemberBioPage({
           <div style={{ marginTop: '2.5rem' }}>
             <Link
               href={`/members/${slug}`}
-              style={{ color: '#C80F2E', textDecoration: 'none', fontSize: '0.9rem', fontWeight: 600 }}
+              style={{ color: '#C8102E', textDecoration: 'none', fontSize: '0.9rem', fontWeight: 600 }}
             >
               ← Back to {sectorName}
             </Link>

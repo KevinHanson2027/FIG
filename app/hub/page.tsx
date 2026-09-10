@@ -66,7 +66,7 @@ export default function HubDashboard() {
               )
             })
           )}
-          <Link href="/hub/resources" style={{ display: 'block', textAlign: 'center', marginTop: '1rem', fontSize: '0.85rem', color: '#C80F2E', textDecoration: 'none' }}>
+          <Link href="/hub/resources" style={{ display: 'block', textAlign: 'center', marginTop: '1rem', fontSize: '0.85rem', color: '#C8102E', textDecoration: 'none' }}>
             View all resources →
           </Link>
         </div>
