@@ -1,30 +1,15 @@
 import { NextResponse } from 'next/server'
+import { getQuotes } from '@/lib/market'
 
-export const runtime = 'edge'
-
+// Live quotes for the portal (ticker lookups, market tools). Public data,
+// but limited to a sane number of well-formed symbols.
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
-  const symbols = searchParams.get('symbols') ?? 'SPY,QQQ,DIA'
-
-  try {
-    const res = await fetch(
-      `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(symbols)}&fields=symbol,shortName,regularMarketPrice,regularMarketChange,regularMarketChangePercent`,
-      {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-          'Accept': 'application/json',
-        },
-        next: { revalidate: 60 },
-      }
-    )
-
-    if (!res.ok) {
-      return NextResponse.json({ quoteResponse: { result: [] } })
-    }
-
-    const data = await res.json()
-    return NextResponse.json(data)
-  } catch {
-    return NextResponse.json({ quoteResponse: { result: [] } })
-  }
+  const symbols = (searchParams.get('symbols') ?? 'SPY,QQQ,DIA')
+    .split(',')
+    .map(s => s.trim().toUpperCase())
+    .filter(s => /^[A-Z0-9.\-^=]{1,12}$/.test(s))
+    .slice(0, 40)
+  const quotes = await getQuotes(symbols)
+  return NextResponse.json({ quotes }, { headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120' } })
 }

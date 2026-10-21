@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Libre_Baskerville, Figtree } from 'next/font/google'
 import './globals.css'
+import './ui.css'
 
 /* Primary typography — headings, brand marks, display text */
 const libreBaskerville = Libre_Baskerville({

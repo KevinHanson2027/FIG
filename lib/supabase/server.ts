@@ -1,6 +1,8 @@
-import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
+/** Supabase client for Server Components, Route Handlers and Server Actions.
+ *  Acts as the signed-in member, so Row Level Security applies. */
 export async function createClient() {
   const cookieStore = await cookies()
 
@@ -12,16 +14,18 @@ export async function createClient() {
         getAll() {
           return cookieStore.getAll()
         },
-        setAll(cookiesToSet: { name: string; value: string; options: CookieOptions }[]) {
+        setAll(cookiesToSet) {
           try {
             cookiesToSet.forEach(({ name, value, options }) =>
               cookieStore.set(name, value, options)
             )
           } catch {
-            // Called from Server Component — middleware handles session refresh
+            // Called from a Server Component — middleware refreshes the session
           }
         },
       },
+      // Always read fresh data; never let Next.js cache database responses.
+      global: { fetch: (input, init) => fetch(input, { ...init, cache: 'no-store' }) },
     }
   )
 }

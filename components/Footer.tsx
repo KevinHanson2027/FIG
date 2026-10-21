@@ -19,6 +19,7 @@ export default function Footer() {
           <h4>Connect</h4>
           <Link href="/get-involved">Get Involved</Link>
           <Link href="/resources">Resources</Link>
+          <Link href="/login">Member Portal</Link>
         </div>
         <div className="footer-column">
           <h4>Socials</h4>

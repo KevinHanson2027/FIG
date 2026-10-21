@@ -1,69 +1,21 @@
-﻿'use client'
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+﻿import type { Metadata } from 'next'
+import { getSectors } from '@/lib/data'
+import { safeNext } from '@/lib/accounts'
+import LoginForm from './LoginForm'
 
-export default function LoginPage() {
-  const router = useRouter()
-  const [key, setKey] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+export const metadata: Metadata = { title: 'Member Login', robots: { index: false } }
 
-  async function handleLogin(e: React.FormEvent) {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
+const errors: Record<string, string> = {
+  'link-expired': 'That link has expired or was already used. Request a new one below.',
+}
 
-    const res = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ key }),
-    })
-
-    if (!res.ok) {
-      setError('Incorrect access key. Please try again.')
-      setLoading(false)
-      return
-    }
-
-    const { role } = await res.json()
-    router.push(role === 'admin' ? '/admin' : '/hub')
-  }
-
+export default async function LoginPage({ searchParams }: { searchParams: { next?: string; error?: string } }) {
+  const sectors = await getSectors()
   return (
-    <div className="login-page">
-      <div className="login-card">
-        <div className="login-logo">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/Website Assets/Logos/FIG Logo.png" alt="Fairfield Investment Group" />
-          <h1>Fairfield Investment Group</h1>
-          <p>Enter your access key to continue</p>
-        </div>
-
-        {error && <div className="login-error">{error}</div>}
-
-        <form onSubmit={handleLogin}>
-          <div className="admin-form-group">
-            <label htmlFor="key">Access Key</label>
-            <input
-              id="key"
-              type="password"
-              value={key}
-              onChange={e => setKey(e.target.value)}
-              placeholder="••••••••"
-              required
-              autoComplete="current-password"
-              autoFocus
-            />
-          </div>
-          <button type="submit" className="login-btn" disabled={loading}>
-            {loading ? 'Verifying…' : 'Sign In'}
-          </button>
-        </form>
-
-        <div className="login-footer">
-          <p>Need access? Contact your FIG administrator.</p>
-        </div>
-      </div>
-    </div>
+    <LoginForm
+      next={safeNext(searchParams.next)}
+      initialError={searchParams.error ? errors[searchParams.error] ?? 'Something went wrong. Please try again.' : ''}
+      sectors={sectors.map(s => s.name)}
+    />
   )
 }

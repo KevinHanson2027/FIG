@@ -1,19 +1,9 @@
-﻿import { createClient } from '@/lib/supabase/server'
+import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import type { Metadata } from 'next'
+import { getSectors } from '@/lib/data'
 
-const sectorMap: Record<string, string> = {
-  'executive-board':  'Executive Board',
-  'consumers':        'Consumers',
-  'energy-utilities': 'Energy & Utilities',
-  'financials':       'Financials',
-  'fixed-income':     'Fixed Income',
-  'healthcare':       'Healthcare',
-  'industrials':      'Industrials & Materials',
-  'real-estate':      'Real Estate',
-  'technology':       'Technology',
-  'marketing':        'Marketing',
-}
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 const MEMBER_HERO = '/Website Assets/Group Photos/Smiling Group Photo %231.JPG'
 
@@ -22,11 +12,14 @@ export async function generateMetadata({
 }: {
   params: { sector: string; id: string }
 }): Promise<Metadata> {
+  if (!UUID.test(params.id)) return { title: 'Member Bio' }
   const supabase = await createClient()
   const { data } = await supabase
     .from('members_directory')
     .select('name, title')
     .eq('id', params.id)
+    .eq('status', 'active')
+    .eq('is_public', true)
     .maybeSingle()
   return {
     title: data?.name ?? 'Member Bio',
@@ -40,14 +33,22 @@ export default async function MemberBioPage({
   params: { sector: string; id: string }
 }) {
   const slug       = params.sector
-  const sectorName = sectorMap[slug] ?? slug
+  const sectorName = (await getSectors()).find(s => s.slug === slug)?.name ?? 'Members'
 
   const supabase = await createClient()
-  const { data: member } = await supabase
-    .from('members_directory')
-    .select('*')
-    .eq('id', params.id)
-    .maybeSingle()
+  let { data: member, error } = UUID.test(params.id)
+    ? await supabase
+        .from('members_directory')
+        .select('*')
+        .eq('id', params.id)
+        .eq('status', 'active')
+        .eq('is_public', true)
+        .maybeSingle()
+    : { data: null, error: null }
+  if (error) {
+    // Database not upgraded yet (supabase/schema.sql): use the legacy flag.
+    ;({ data: member } = await supabase.from('members_directory').select('*').eq('id', params.id).eq('is_active', true).maybeSingle())
+  }
 
   if (!member) {
     return (

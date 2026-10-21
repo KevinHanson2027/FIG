@@ -1,19 +1,8 @@
-﻿import { createClient } from '@/lib/supabase/server'
+import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
+import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
-
-const sectorMap: Record<string, string> = {
-  'executive-board':  'Executive Board',
-  'consumers':        'Consumers',
-  'energy-utilities': 'Energy & Utilities',
-  'financials':       'Financials',
-  'fixed-income':     'Fixed Income',
-  'healthcare':       'Healthcare',
-  'industrials':      'Industrials & Materials',
-  'real-estate':      'Real Estate',
-  'technology':       'Technology',
-  'marketing':        'Marketing',
-}
+import { getSectors } from '@/lib/data'
 
 const MEMBER_HERO = '/Website Assets/Group Photos/Smiling Group Photo %231.JPG'
 const FIG_PLACEHOLDER = '/Website Assets/Logos/FIG Logo.png'
@@ -31,7 +20,8 @@ type Member = {
 }
 
 export async function generateMetadata({ params }: { params: { sector: string } }): Promise<Metadata> {
-  return { title: sectorMap[params.sector] ?? params.sector }
+  const sector = (await getSectors()).find(s => s.slug === params.sector)
+  return { title: sector?.name ?? 'Members' }
 }
 
 function isPM(m: Member) {
@@ -108,27 +98,39 @@ function PMSpotlight({ m, sectorSlug }: { m: Member; sectorSlug: string }) {
 
 export default async function SectorPage({ params }: { params: { sector: string } }) {
   const slug           = params.sector
-  const sectorName     = sectorMap[slug] ?? slug
-  const isExecutiveBoard = slug === 'executive-board'
+  const sector         = (await getSectors()).find(s => s.slug === slug)
+  if (!sector) notFound()
+  const sectorName     = sector.name
+  const isExecutiveBoard = sector.kind === 'leadership'
   const supabase       = await createClient()
 
-  const { data: sectorMembers } = await supabase
+  let { data: sectorMembers, error } = await supabase
     .from('members_directory')
     .select('*')
     .eq('sector', sectorName)
-    .eq('is_active', true)
+    .eq('status', 'active')
+    .eq('is_public', true)
     .order('sort_order')
+    .order('name')
+  if (error) {
+    // Database not upgraded yet (supabase/schema.sql): use the legacy flag.
+    ;({ data: sectorMembers } = await supabase.from('members_directory').select('*').eq('sector', sectorName).eq('is_active', true).order('sort_order'))
+  }
 
   // Executive Board also shows all sector PMs
   let allPMs: Member[] = []
   if (isExecutiveBoard) {
-    const { data } = await supabase
+    let { data, error: pmError } = await supabase
       .from('members_directory')
       .select('*')
-      .neq('sector', 'Executive Board')
-      .eq('is_active', true)
+      .neq('sector', sectorName)
+      .eq('status', 'active')
+      .eq('is_public', true)
       .ilike('title', '%Portfolio Manager%')
       .order('sector')
+    if (pmError) {
+      ;({ data } = await supabase.from('members_directory').select('*').neq('sector', sectorName).eq('is_active', true).ilike('title', '%Portfolio Manager%').order('sector'))
+    }
     allPMs = data ?? []
   }
 

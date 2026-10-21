@@ -1,20 +1,10 @@
-import { NextResponse, type NextRequest } from 'next/server'
+import { type NextRequest } from 'next/server'
+import { updateSession } from '@/lib/supabase/middleware'
 
-export function middleware(request: NextRequest) {
-  const role = request.cookies.get('fig_role')?.value
-  const { pathname } = request.nextUrl
-
-  if (pathname.startsWith('/admin') && role !== 'admin') {
-    return NextResponse.redirect(new URL('/login', request.url))
-  }
-
-  if (pathname.startsWith('/hub') && role !== 'admin' && role !== 'member') {
-    return NextResponse.redirect(new URL('/login', request.url))
-  }
-
-  return NextResponse.next()
+export async function middleware(request: NextRequest) {
+  return updateSession(request)
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/hub/:path*'],
+  matcher: ['/portal/:path*', '/login'],
 }

@@ -1,12 +1,25 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { getPageContent } from '@/lib/getPageContent'
+import { createClient } from '@/lib/supabase/server'
+import { getSectors } from '@/lib/data'
+import type { RecruitingSettings } from '@/lib/types'
+import InterestForm from '@/components/public/InterestForm'
 
 export const metadata: Metadata = { title: 'Get Involved' }
 
 export default async function GetInvolvedPage() {
-  const db = await getPageContent('get-involved')
+  const supabase = await createClient()
+  const [db, sectors, { data: rec }] = await Promise.all([
+    getPageContent('get-involved'),
+    getSectors(),
+    supabase.from('settings').select('value').eq('key', 'recruiting').maybeSingle(),
+  ])
   const c = (key: string, fallback: string) => db[key] || fallback
+  const recruiting = rec?.value as RecruitingSettings | undefined
+  const applicationsOpen = Boolean(recruiting?.applications_open)
+  // Optional external form (set in Website Content). Blank = built-in form that feeds the recruiting pipeline.
+  const externalForm = db['cta_form_url']?.trim() || ''
 
   const appSteps = c('app_steps', `Submit your application\nResume screening\nIn-person interview with a Portfolio Manager`)
     .split('\n').filter(Boolean)
@@ -69,13 +82,20 @@ export default async function GetInvolvedPage() {
         </div>
       </section>
 
-      <section className="section" style={{ maxWidth: '1200px', margin: '0 auto', padding: '4rem 2rem' }}>
+      <section id="interest" className="section" style={{ maxWidth: '1200px', margin: '0 auto', padding: '4rem 2rem' }}>
         <div className="newsletter">
           <h3>{c('cta_title', 'Ready to Join?')}</h3>
-          <div style={{ marginTop: '2rem', display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-            <a href={c('cta_form_url', 'https://forms.gle/84qCM2sGMZpJTaba8')} className="btn" target="_blank" rel="noopener noreferrer">
-              {c('cta_form_btn', 'Interest Form')}
-            </a>
+          {applicationsOpen ? (
+            <p>Applications are open{recruiting?.cycle ? ` for ${recruiting.cycle}` : ''}. It only takes about 10 minutes.</p>
+          ) : (
+            <p>Join our interest list and we&apos;ll let you know when applications open.</p>
+          )}
+          {!externalForm && !applicationsOpen && <InterestForm sectors={sectors.filter(s => s.kind === 'investment').map(s => s.name)} />}
+          <div className="newsletter-actions">
+            {applicationsOpen && <Link href="/apply" className="btn">Apply now</Link>}
+            {externalForm && (
+              <a href={externalForm} className="btn" target="_blank" rel="noopener noreferrer">{c('cta_form_btn', 'Interest Form')}</a>
+            )}
             <Link href="/resources" className="btn" style={{ backgroundColor: '#000' }}>
               View Resources
             </Link>
