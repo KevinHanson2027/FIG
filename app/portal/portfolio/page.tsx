@@ -14,19 +14,53 @@ import { BarList, LineChart, VIZ } from '@/components/portal/charts'
 import { HoldingsTable } from '@/components/portal/HoldingsTable'
 import { NewsList } from '@/components/portal/NewsList'
 import { SelectNav } from '@/components/portal/SelectNav'
+import { PortfolioTabs } from '@/components/portal/SectionTabs'
 
 export const metadata = { title: 'Portfolio' }
 
-export default async function PortfolioPage({ searchParams }: { searchParams: { news?: string } }) {
+export default async function PortfolioPage({ searchParams }: { searchParams: { news?: string; tab?: string } }) {
   const { member, access } = await requireMember()
-  const supabase = await createClient()
-  const [{ portfolio }, sectors, snapshotsRes] = await Promise.all([
-    loadPortfolio(),
-    getSectors(),
-    supabase.from('portfolio_snapshots').select('*').order('snapshot_date'),
-  ])
-  const snapshots = (snapshotsRes.data ?? []) as Snapshot[]
+  const tab = searchParams.tab === 'holdings' ? 'holdings' : 'overview'
+  const [{ portfolio }, sectors] = await Promise.all([loadPortfolio(), getSectors()])
   const investment = sectors.filter(s => s.kind === 'investment').map(s => s.name)
+  const canEdit = access.canManageTeams || access.isPpgManager
+  const header = (
+    <>
+      <PageHeader
+        title="Portfolio"
+        description="FIG's holdings, live. Prices are delayed about a minute."
+        actions={access.hasPpg ? <Link href="/portal/ppg" className="ui-btn ui-btn-secondary"><ChartLine size={16} /> Advanced analytics</Link> : null}
+      />
+      <PortfolioTabs active={tab} />
+    </>
+  )
+
+  if (tab === 'holdings') {
+    return (
+      <>
+        {header}
+        {portfolio.missingShares > 0 && (
+          <div style={{ marginBottom: 20 }}>
+            <Notice tone="warn">
+              <strong>{portfolio.missingShares} of {portfolio.positions.length} holdings have no share count</strong>, so values and weights are incomplete.
+              {canEdit ? ' Click the pencil on a row to add shares and average cost.' : ' Your PM or the PPG manager can add them.'}
+            </Notice>
+          </div>
+        )}
+        <HoldingsTable
+          positions={portfolio.positions}
+          hasValues={portfolio.hasValues}
+          editableSectors={access.pmSectors}
+          sectorOptions={investment}
+          canManageAll={access.isAdmin || access.isPpgManager}
+        />
+      </>
+    )
+  }
+
+  const supabase = await createClient()
+  const { data: snapshotRows } = await supabase.from('portfolio_snapshots').select('*').order('snapshot_date')
+  const snapshots = (snapshotRows ?? []) as Snapshot[]
   const newsSector = searchParams.news ?? (investment.includes(member.sector) ? member.sector : 'all')
   const unrealized = portfolio.positions.reduce((s, p) => s + (p.gain ?? 0), 0)
   const costCovered = portfolio.positions.filter(p => p.gain !== null)
@@ -34,17 +68,12 @@ export default async function PortfolioPage({ searchParams }: { searchParams: { 
 
   return (
     <>
-      <PageHeader
-        title="Portfolio"
-        description="Live view of FIG's holdings. Prices are delayed and refresh about every minute."
-        actions={access.hasPpg ? <Link href="/portal/ppg" className="ui-btn ui-btn-secondary"><ChartLine size={16} /> Advanced analytics</Link> : null}
-      />
+      {header}
 
-      {portfolio.missingShares > 0 && (
+      {portfolio.missingShares > 0 && canEdit && (
         <div style={{ marginBottom: 20 }}>
           <Notice tone="warn">
-            <strong>{portfolio.missingShares} of {portfolio.positions.length} holdings don&apos;t have share counts yet</strong>, so values and weights are incomplete.
-            {access.canManageTeams || access.isPpgManager ? ' Use the pencil icon on each row to add shares and average cost.' : ' Your PM or the PPG manager can add them.'}
+            {portfolio.missingShares} holdings have no share count yet. <Link href="/portal/portfolio?tab=holdings" className="ui-link">Add them on the Holdings tab</Link> so values and the performance chart work.
           </Notice>
         </div>
       )}
@@ -70,7 +99,7 @@ export default async function PortfolioPage({ searchParams }: { searchParams: { 
                   { name: 'FIG portfolio', color: VIZ.series, emphasis: true, values: indexSeries(snapshots.map(s => s.total_value)) },
                 ]}
               />
-              <p className="ui-hint" style={{ marginTop: 8 }}>Based on recorded daily value, so donations in or out show up as moves. Recorded every weekday evening.</p>
+              <p className="ui-hint" style={{ marginTop: 8 }}>Recorded every weekday evening, so donations in or out show up as moves.</p>
             </>
           ) : (
             <EmptyState icon={<ChartLine size={20} />} title="Performance history is building">
@@ -89,28 +118,18 @@ export default async function PortfolioPage({ searchParams }: { searchParams: { 
         </Card>
       </div>
 
-      <div className="ui-stack">
-        <HoldingsTable
-          positions={portfolio.positions}
-          hasValues={portfolio.hasValues}
-          editableSectors={access.pmSectors}
-          sectorOptions={investment}
-          canManageAll={access.isAdmin || access.isPpgManager}
-        />
-
-        <Card
-          title={<><Newspaper size={18} /> News</>}
-          actions={
-            <SelectNav param="news" value={newsSector} label="News for sector"
-              options={[{ value: 'all', label: 'Whole portfolio' }, ...investment.map(s => ({ value: s, label: s }))]} />
-          }
-          tight
-        >
-          <Suspense key={newsSector} fallback={<div className="ui-skeleton" style={{ height: 240, margin: 20 }} />}>
-            <PortfolioNews sector={newsSector} />
-          </Suspense>
-        </Card>
-      </div>
+      <Card
+        title={<><Newspaper size={18} /> News</>}
+        actions={
+          <SelectNav param="news" value={newsSector} label="News for sector"
+            options={[{ value: 'all', label: 'Whole portfolio' }, ...investment.map(s => ({ value: s, label: s }))]} />
+        }
+        tight
+      >
+        <Suspense key={newsSector} fallback={<div className="ui-skeleton" style={{ height: 240, margin: 20 }} />}>
+          <PortfolioNews sector={newsSector} />
+        </Suspense>
+      </Card>
     </>
   )
 }

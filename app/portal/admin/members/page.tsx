@@ -7,6 +7,7 @@ import { summarize } from '@/lib/attendance'
 import { todayET } from '@/lib/format'
 import type { Attendance, Meeting, Member, RoleGrant } from '@/lib/types'
 import { NoAccess, PageHeader } from '@/components/portal/ui'
+import { AdminTabs } from '../AdminTabs'
 import MembersAdmin, { type AdminRow } from './MembersAdmin'
 
 export const metadata = { title: 'Members & Roles' }
@@ -37,7 +38,8 @@ export default async function MembersPage({ searchParams }: { searchParams: { ac
 
   return (
     <>
-      <PageHeader title="Members & Roles" description="Everyone on the roster. Edit profiles, assign roles, send sign-in links and archive alumni." />
+      <PageHeader title="Control Panel" description="Everyone on the roster. Edit profiles, assign roles, send sign-in links and archive alumni." />
+      <AdminTabs active="members" />
       <MembersAdmin
         rows={rows}
         sectors={sectors.map(s => ({ name: s.name, slug: s.slug, kind: s.kind }))}

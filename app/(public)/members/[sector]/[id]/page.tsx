@@ -2,10 +2,9 @@ import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import { getSectors } from '@/lib/data'
+import { MemberBio } from '@/components/public/MemberProfile'
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-
-const MEMBER_HERO = '/Website Assets/Group Photos/Smiling Group Photo %231.JPG'
 
 export async function generateMetadata({
   params,
@@ -59,79 +58,5 @@ export default async function MemberBioPage({
     )
   }
 
-  // Split bio into paragraphs on newline boundaries
-  const bioParagraphs = (member.bio ?? '')
-    .split(/\n+/)
-    .map((p: string) => p.trim())
-    .filter(Boolean)
-
-  return (
-    <>
-      {/* ── Small hero ──────────────────────────────────────── */}
-      <section className="bio-hero">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={MEMBER_HERO} alt={sectorName} />
-        <div className="bio-hero-overlay" />
-        <div className="bio-hero-text">
-          <h1>{member.name}</h1>
-        </div>
-      </section>
-
-      {/* ── Bio layout ──────────────────────────────────────── */}
-      <div className="bio-container">
-        {/* Headshot */}
-        <div className="bio-photo">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={member.headshot_url ?? '/Website Assets/Logos/FIG Logo.png'}
-            alt={member.name}
-            className={member.headshot_url ? undefined : 'is-placeholder'}
-          />
-        </div>
-
-        {/* Content */}
-        <div className="bio-content">
-          <h2>{member.name}</h2>
-          <h3>{member.title}</h3>
-
-          {bioParagraphs.length > 0 ? (
-            bioParagraphs.map((para: string, i: number) => (
-              <p key={i} className="bio-text">{para}</p>
-            ))
-          ) : (
-            <p className="bio-text" style={{ color: '#999' }}>
-              Bio coming soon.
-            </p>
-          )}
-
-          <div className="bio-links">
-            {member.email && (
-              <a href={`mailto:${member.email}`} className="bio-btn">
-                Email
-              </a>
-            )}
-            {member.linkedin_url && (
-              <a
-                href={member.linkedin_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="bio-btn"
-              >
-                LinkedIn
-              </a>
-            )}
-          </div>
-
-          <div style={{ marginTop: '2.5rem' }}>
-            <Link
-              href={`/members/${slug}`}
-              style={{ color: '#C8102E', textDecoration: 'none', fontSize: '0.9rem', fontWeight: 600 }}
-            >
-              ← Back to {sectorName}
-            </Link>
-          </div>
-        </div>
-      </div>
-    </>
-  )
+  return <MemberBio m={member} sectorName={sectorName} backHref={`/members/${slug}`} />
 }

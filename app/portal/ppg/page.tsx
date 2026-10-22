@@ -62,7 +62,7 @@ export default async function PpgPage({ searchParams }: { searchParams: { tab?: 
       const { data } = await supabase.from('tasks').select('*').eq('team', 'ppg').eq('assigned_to', member.id).neq('status', 'done').order('due_date')
       const mine = (data ?? []) as Task[]
       body = (
-        <Card title="My PPG assignments" actions={<Link href="/portal/tasks" className="ui-btn ui-btn-secondary ui-btn-sm">Open My Tasks</Link>} tight>
+        <Card title="My PPG assignments" actions={<Link href="/portal/tasks" className="ui-btn ui-btn-secondary ui-btn-sm">Open My Work</Link>} tight>
           {mine.length === 0 ? <EmptyState title="No open PPG assignments" /> : (
             <ul className="ui-list">
               {mine.map(t => (

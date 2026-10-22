@@ -1,28 +1,67 @@
 'use client'
-import { useState } from 'react'
-import { CalendarDays, HeartHandshake, Layers, Pencil, Plus, UserPlus } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { GraduationCap, HeartHandshake, Layers, Pencil, Plus, UserPlus } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import type { DonationSettings, Sector, SectorKind, SignupSettings, TermSettings } from '@/lib/types'
+import type { DonationSettings, Sector, SectorKind, SignupSettings } from '@/lib/types'
+import { Avatar } from '@/components/portal/Avatar'
 import { Modal } from '@/components/portal/Modal'
-import { must, useMutation } from '@/components/portal/feedback'
+import { must, useConfirm, useMutation } from '@/components/portal/feedback'
 import { Badge, Card } from '@/components/portal/ui'
 
-export function TermForm({ initial }: { initial: TermSettings }) {
-  const [t, setT] = useState(initial)
+export type Senior = { id: string; name: string; sector: string; title: string | null; class_year: number; headshot_url: string | null; admin: boolean }
+
+/** Seniors are listed ahead of June 1; one click moves them to alumni. */
+export function GraduationCard({ seniors, nextClass, missingYear, viewerId }: { seniors: Senior[]; nextClass: number; missingYear: number; viewerId: string }) {
+  const [chosen, setChosen] = useState<Set<string>>(() => new Set(seniors.map(m => m.id)))
   const { run, pending } = useMutation()
-  async function save(e: React.FormEvent) {
-    e.preventDefault()
-    await run(async () => must(await createClient().from('settings').upsert({ key: 'term', value: { name: t.name.trim(), starts_on: t.starts_on } }, { onConflict: 'key' })), { success: 'Term saved' })
+  const confirm = useConfirm()
+  useEffect(() => setChosen(new Set(seniors.map(m => m.id))), [seniors])
+  const toggle = (id: string) => setChosen(s => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n })
+
+  async function graduate() {
+    const ids = [...chosen]
+    if (!(await confirm({
+      title: `Move ${ids.length} member${ids.length === 1 ? '' : 's'} to alumni?`,
+      body: 'They disappear from the website and lose their roles and portal access. Their profiles are kept, and you can restore anyone from Members & roles.',
+      confirmLabel: 'Graduate them', danger: true,
+    }))) return
+    await run(async () => {
+      const { error } = await createClient().rpc('graduate_members', { p_ids: ids })
+      if (error) throw new Error(/at least one active admin/i.test(error.message) ? 'That would leave FIG with no admin. Make the incoming co-presidents admins in Members & roles first, then graduate yourself.' : error.message)
+    }, { success: 'Congratulations, graduates! 🎓' })
   }
+
   return (
-    <Card title={<><CalendarDays size={18} /> Current term</>} description="Shown around the portal; attendance counts meetings from the start date.">
-      <form onSubmit={save} className="ui-form">
-        <div className="ui-form-grid">
-          <div className="ui-field"><label htmlFor="tf-name">Name</label><input id="tf-name" className="ui-input" required value={t.name} onChange={e => setT(x => ({ ...x, name: e.target.value }))} /></div>
-          <div className="ui-field"><label htmlFor="tf-start">Start date</label><input id="tf-start" className="ui-input" type="date" required value={t.starts_on} onChange={e => setT(x => ({ ...x, starts_on: e.target.value }))} /></div>
-        </div>
-        <div><button type="submit" className="ui-btn ui-btn-primary" disabled={pending}>Save</button></div>
-      </form>
+    <Card title={<><GraduationCap size={18} /> Graduation &amp; handoff</>} description={`The class of ${nextClass} graduates in May. The term and recruiting cycle update on their own.`} tight>
+      {seniors.length === 0 ? (
+        <p className="ui-small ui-muted" style={{ padding: '4px 20px 16px' }}>No active members in the class of {nextClass} or earlier.</p>
+      ) : (
+        <>
+          <ul className="ui-list">
+            {seniors.map(m => (
+              <li key={m.id} className="ui-list-item">
+                <input type="checkbox" aria-label={`Graduate ${m.name}`} checked={chosen.has(m.id)} onChange={() => toggle(m.id)} />
+                <Avatar name={m.name} url={m.headshot_url} size="sm" />
+                <div className="ui-list-main">
+                  <div className="ui-list-title">{m.name}{m.id === viewerId ? ' (you)' : ''}</div>
+                  <div className="ui-list-sub">{m.title ?? 'Analyst'} · Class of {m.class_year}</div>
+                </div>
+                {m.admin && <Badge tone="navy">Admin</Badge>}
+              </li>
+            ))}
+          </ul>
+          <div className="ui-card-foot ui-spread">
+            <span className="ui-small ui-muted">Uncheck anyone staying on.</span>
+            <button type="button" className="ui-btn ui-btn-primary ui-btn-sm" onClick={graduate} disabled={pending || chosen.size === 0}><GraduationCap size={15} /> Graduate {chosen.size}</button>
+          </div>
+        </>
+      )}
+      <div className="ui-card-foot">
+        <p className="ui-small ui-muted" style={{ lineHeight: 1.55 }}>
+          <strong style={{ color: 'var(--ui-ink)' }}>Handing off leadership:</strong> incoming leaders request their role under My Profile, and you approve it in the Inbox. You can also assign roles directly in Members &amp; roles. Graduate outgoing admins last.
+          {missingYear > 0 && <> {missingYear} member{missingYear === 1 ? ' has' : 's have'} no graduation year and won&apos;t appear here.</>}
+        </p>
+      </div>
     </Card>
   )
 }

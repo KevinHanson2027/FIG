@@ -213,7 +213,7 @@ function CandidateDrawer({ candidate: c, interviews, interviewers, sectors, emai
       }))
       if (['interested', 'invited', 'applied'].includes(c.stage)) must(await supabase.from('candidates').update({ stage: 'interviewing' }).eq('id', c.id))
       return true
-    }, { success: 'Interview scheduled — the interviewer will see it in My Interviews' })
+    }, { success: 'Interview scheduled — the interviewer will see it under My Work' })
     if (ok) setSchedule(s => ({ ...s, at: '', location: '' }))
   }
 

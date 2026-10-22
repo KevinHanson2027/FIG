@@ -15,6 +15,7 @@ const nextConfig = {
       { source: '/admin/content', destination: '/portal/content', permanent: false },
       { source: '/admin/resources', destination: '/portal/resources', permanent: false },
       { source: '/admin/announcements', destination: '/portal', permanent: false },
+      { source: '/portal/admin/transition', destination: '/portal/admin/settings', permanent: false },
     ]
   },
 

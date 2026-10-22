@@ -4,8 +4,9 @@ import { useRouter } from 'next/navigation'
 import { ArrowLeft, ArrowRight, Check, Pencil } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { REQUESTABLE_ROLES, ROLES } from '@/lib/roles'
-import { firstName } from '@/lib/format'
-import type { Member, MemberInternal, ProfileChange, ProfileFields, RoleGrant, RoleRequest, SectorKind } from '@/lib/types'
+import { classYearOptions, firstName, todayET } from '@/lib/format'
+import { publishProfile, requestSectorChange } from '@/lib/profile'
+import type { Member, MemberInternal, ProfileChange, RoleGrant, RoleRequest, SectorKind } from '@/lib/types'
 import { ImageUpload } from '@/components/portal/ImageUpload'
 import { must, useMutation } from '@/components/portal/feedback'
 import { Badge } from '@/components/portal/ui'
@@ -46,7 +47,6 @@ export default function Onboarding({ member, heldRoles, requests, internal, pend
   const { run, pending } = useMutation()
   const supabase = createClient()
   const investment = sectors.filter(s => s.kind === 'investment').map(s => s.name)
-  const thisYear = new Date().getFullYear()
 
   // ── form state ─────────────────────────────────────────────────
   const [pw, setPw] = useState({ password: '', confirm: '' })
@@ -101,8 +101,16 @@ export default function Onboarding({ member, heldRoles, requests, internal, pend
         if (!/^20\d{2}$/.test(about.classYear)) throw new Error('Please choose your graduation year.')
         const patch = applicant
           ? { name: about.name.trim(), sector: about.sector, class_year: Number(about.classYear) }
-          : { class_year: Number(about.classYear) }
+          : { name: about.name.trim(), class_year: Number(about.classYear) }
         must(await supabase.from('members_directory').update(patch).eq('id', member.id))
+        // Active members' sector moves wait for a co-president.
+        if (!applicant && about.sector !== member.sector) {
+          await requestSectorChange(supabase, member.id, about.sector, changeId)
+          if (!changeId) {
+            const { data } = await supabase.from('profile_changes').select('id').eq('member_id', member.id).eq('status', 'pending').maybeSingle()
+            setChangeId(data?.id ?? null)
+          }
+        }
       }
       if (s === 'roles') {
         const toAdd = [...wanted].filter(k => !held.has(k) && !requested.has(k))
@@ -127,17 +135,7 @@ export default function Onboarding({ member, heldRoles, requests, internal, pend
         if (applicant) {
           must(await supabase.from('members_directory').update({ bio: profile.bio.trim() || null, linkedin_url: li || null, headshot_url: profile.headshot_url || null }).eq('id', member.id))
         } else {
-          const proposed: ProfileFields = { name: about.name.trim(), sector: about.sector, bio: profile.bio.trim(), linkedin_url: li, headshot_url: profile.headshot_url }
-          const current: Record<string, string> = { name: member.name, sector: member.sector, bio: member.bio ?? '', linkedin_url: member.linkedin_url ?? '', headshot_url: member.headshot_url ?? '' }
-          const changes = Object.fromEntries(Object.entries(proposed).filter(([k, v]) => (v ?? '') !== current[k]))
-          if (Object.keys(changes).length) {
-            if (changeId) must(await supabase.from('profile_changes').update({ changes }).eq('id', changeId))
-            else {
-              const { data, error } = await supabase.from('profile_changes').insert({ member_id: member.id, changes }).select('id').single()
-              if (error) throw new Error(error.message)
-              setChangeId(data.id)
-            }
-          }
+          await publishProfile(supabase, member.id, { name: about.name, headshot_url: profile.headshot_url, linkedin_url: li, bio: profile.bio })
         }
       }
       if (s === 'plans') {
@@ -157,11 +155,7 @@ export default function Onboarding({ member, heldRoles, requests, internal, pend
     if (await save(step)) { setIndex(i => i + 1); window.scrollTo({ top: 0, behavior: 'smooth' }) }
   }
   function back() { setIndex(i => Math.max(0, i - 1)); window.scrollTo({ top: 0 }) }
-  async function skip() {
-    // Skipping the profile still sends name/sector corrections made in "About you".
-    if (step === 'profile' && !applicant && (about.name.trim() !== member.name || about.sector !== member.sector)) {
-      if (!(await save('profile'))) return
-    }
+  function skip() {
     setIndex(i => i + 1)
     window.scrollTo({ top: 0 })
   }
@@ -219,12 +213,12 @@ export default function Onboarding({ member, heldRoles, requests, internal, pend
             <label htmlFor="ob-year">Graduation year</label>
             <select id="ob-year" className="ui-select" value={about.classYear} onChange={e => setAbout(a => ({ ...a, classYear: e.target.value }))}>
               <option value="" disabled>Choose…</option>
-              {Array.from({ length: 6 }, (_, i) => thisYear + i - 1).map(y => <option key={y} value={y}>{y}</option>)}
+              {classYearOptions(todayET()).map(y => <option key={y} value={y}>{y}</option>)}
             </select>
           </div>
         </div>
-        {!applicant && (about.name.trim() !== member.name || about.sector !== member.sector) && (
-          <span className="ui-hint">Name and sector changes are sent to the co-presidents with your profile.</span>
+        {!applicant && about.sector !== member.sector && (
+          <span className="ui-hint">A co-president will confirm your move to {about.sector}.</span>
         )}
         {!applicant && member.title && <span className="ui-hint">Your title is <strong>{member.title}</strong> (set by the co-presidents).</span>}
       </div>
@@ -291,7 +285,7 @@ export default function Onboarding({ member, heldRoles, requests, internal, pend
   }
   if (step === 'profile') {
     title = 'Your public profile'
-    lead = applicant ? 'This appears on the FIG website once you’re approved. You can skip this and add it later.' : 'Changes are reviewed by a co-president before they appear on the website.'
+    lead = applicant ? 'This appears on the FIG website once you’re approved. You can skip this and add it later.' : 'This is how you appear on the FIG website. It goes live when you continue, and you can change it any time under My Profile.'
     body = (
       <div className="ui-form">
         <div className="profile-preview">

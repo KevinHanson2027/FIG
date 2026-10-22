@@ -1,11 +1,14 @@
 import { CircleCheck, CircleX, Server } from 'lucide-react'
 import { requireMember } from '@/lib/auth'
+import { createClient } from '@/lib/supabase/server'
+import { graduatedClass, todayET } from '@/lib/format'
 import { createAdminClient, hasServiceRole } from '@/lib/supabase/admin'
 import { isEmailConfigured } from '@/lib/email'
 import { getOrigin } from '@/lib/accounts'
 import { getSectors, getSettings } from '@/lib/data'
 import { Card, NoAccess, PageHeader } from '@/components/portal/ui'
-import { GivingForm, SectorsEditor, SignupForm, TermForm } from './forms'
+import { GivingForm, GraduationCard, SectorsEditor, SignupForm, type Senior } from './forms'
+import { AdminTabs } from '../AdminTabs'
 
 export const metadata = { title: 'Settings' }
 
@@ -30,19 +33,29 @@ async function serviceKeyStatus(): Promise<'ok' | 'missing' | 'rejected'> {
 }
 
 export default async function SettingsPage() {
-  const { access } = await requireMember()
+  const { member: me, access } = await requireMember()
   if (!access.isAdmin) return <NoAccess what="Settings are for the co-presidents." />
-  const [settings, sectors, keyStatus, origin] = await Promise.all([getSettings(), getSectors(true), serviceKeyStatus(), getOrigin()])
+  const nextClass = graduatedClass(todayET()) + 1
+  const supabase = await createClient()
+  const [settings, sectors, keyStatus, origin, seniorRes, adminRes, noYearRes] = await Promise.all([
+    getSettings(), getSectors(true), serviceKeyStatus(), getOrigin(),
+    supabase.from('members_directory').select('id, name, sector, title, class_year, headshot_url').eq('status', 'active').lte('class_year', nextClass).order('class_year').order('name'),
+    supabase.from('member_roles').select('member_id').eq('role', 'admin'),
+    supabase.from('members_directory').select('id', { count: 'exact', head: true }).eq('status', 'active').is('class_year', null),
+  ])
+  const adminIds = new Set((adminRes.data ?? []).map(r => r.member_id as string))
+  const seniors = ((seniorRes.data ?? []) as Omit<Senior, 'admin'>[]).map(m => ({ ...m, admin: adminIds.has(m.id) }))
   const service = keyStatus === 'ok'
   const email = isEmailConfigured()
   const siteUrlSet = Boolean(process.env.SITE_URL || process.env.NEXT_PUBLIC_SITE_URL)
 
   return (
     <>
-      <PageHeader title="Settings" description="Club-wide settings. Most of these change once a semester." />
+      <PageHeader title="Control Panel" description={`Club-wide settings. The current term (${settings.term.name}) is set automatically.`} />
+      <AdminTabs active="settings" />
       <div className="ui-stack">
         <div className="ui-grid ui-grid-2">
-          <TermForm initial={settings.term} />
+          <GraduationCard seniors={seniors} nextClass={nextClass} missingYear={noYearRes.count ?? 0} viewerId={me.id} />
           <Card title={<><Server size={18} /> System status</>} description="Set in Vercel → Project → Settings → Environment Variables. See SETUP.md.">
             <ul className="ui-list">
               <Check ok={service} label="Account management" help={

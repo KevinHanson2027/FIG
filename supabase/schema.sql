@@ -1,5 +1,5 @@
 -- =====================================================================
--- FIG App — Supabase Database Schema v4 (Member Portal)
+-- FIG App — Supabase Database Schema v5 (Member Portal)
 -- ---------------------------------------------------------------------
 -- HOW TO RUN: Supabase Dashboard → SQL Editor → New query → paste this
 -- whole file → Run.
@@ -31,6 +31,8 @@
 -- Accounts: people sign up themselves (the website checks the roster or
 -- records an application as status 'pending'), finish onboarding at
 -- /portal/welcome, and co-presidents approve them with approve_member().
+-- Members edit their own name, photo, bio and LinkedIn directly; only
+-- sector changes, roles and new members need a co-president.
 -- See SETUP.md for the full walkthrough.
 -- =====================================================================
 
@@ -345,11 +347,12 @@ alter table public.role_requests add constraint role_requests_sector_check
 create unique index if not exists role_requests_one_pending
   on public.role_requests (member_id, role, coalesce(sector, '')) where status = 'pending';
 
--- Public profile edits wait here until an admin approves them.
+-- Sector changes wait here until an admin approves them (members edit the
+-- rest of their profile directly).
 create table if not exists public.profile_changes (
   id          uuid primary key default gen_random_uuid(),
   member_id   uuid not null references public.members_directory(id) on delete cascade,
-  changes     jsonb not null,   -- any of: name, bio, headshot_url, linkedin_url, sector
+  changes     jsonb not null,   -- sector (older rows may also hold name, bio, headshot_url, linkedin_url)
   status      text not null default 'pending',
   reviewed_by uuid references public.members_directory(id) on delete set null,
   reviewed_at timestamptz,
@@ -382,9 +385,13 @@ insert into public.settings (key, value, is_public) values
   ('signup',     '{"open": true, "domains": ["student.fairfield.edu", "fairfield.edu"]}', true)
 on conflict (key) do nothing;
 
+-- The cycle recruiting named, or else the current semester ("Fall 2026").
 create or replace function public.recruiting_cycle() returns text
 language sql stable security definer set search_path = '' as $$
-  select coalesce((select s.value->>'cycle' from public.settings s where s.key = 'recruiting'), '')
+  select coalesce(
+    nullif(trim((select s.value->>'cycle' from public.settings s where s.key = 'recruiting')), ''),
+    case when extract(month from now() at time zone 'America/New_York') >= 8 then 'Fall ' else 'Spring ' end
+      || extract(year from now() at time zone 'America/New_York')::int::text)
 $$;
 
 
@@ -745,15 +752,13 @@ begin
   new.email := nullif(lower(trim(new.email)), '');
   new.updated_at := now();
 
-  -- Members editing their own row may change only their class year and
-  -- onboarding marker; public profile edits go through profile_changes and
-  -- need admin approval. Applicants (pending) may also fill in their own
-  -- name, sector and profile, since nothing is public until approved.
+  -- Members editing their own row may change their name, photo, bio,
+  -- LinkedIn, class year and onboarding marker, and those go live right
+  -- away. A sector change goes through profile_changes for an admin to
+  -- approve, except for applicants, whose row isn't public yet.
   if tg_op = 'UPDATE' and auth.uid() is not null and not public.is_admin() then
     if old.status <> 'pending' then
-      new.name := old.name;           new.sector := old.sector;
-      new.linkedin_url := old.linkedin_url;
-      new.bio := old.bio;             new.headshot_url := old.headshot_url;
+      new.sector := old.sector;
     end if;
     new.title := old.title;           new.email := old.email;
     new.sort_order := old.sort_order;

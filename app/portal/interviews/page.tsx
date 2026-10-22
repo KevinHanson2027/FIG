@@ -2,9 +2,10 @@ import { requireMember } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import type { Candidate, Interview } from '@/lib/types'
 import { PageHeader } from '@/components/portal/ui'
+import { WorkTabs } from '@/components/portal/SectionTabs'
 import InterviewList from './InterviewList'
 
-export const metadata = { title: 'My Interviews' }
+export const metadata = { title: 'Interviews' }
 
 export default async function InterviewsPage() {
   const { member } = await requireMember()
@@ -19,7 +20,8 @@ export default async function InterviewsPage() {
 
   return (
     <>
-      <PageHeader title="My Interviews" description="Candidates you're interviewing. Fill in the scorecard right after each interview — recruiting sees it immediately." />
+      <PageHeader title="My Work" description="Candidates you're interviewing. Fill in the scorecard right after each interview; recruiting sees it right away." />
+      <WorkTabs active="interviews" memberId={member.id} />
       <InterviewList interviews={interviews} />
     </>
   )

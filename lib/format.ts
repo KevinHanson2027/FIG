@@ -102,6 +102,25 @@ export function initials(name: string) {
   return name.split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]?.toUpperCase()).join('') || '?'
 }
 
+/** The semester a date falls in: Spring = Jan–Jul, Fall = Aug–Dec. Worked
+ *  out from the calendar so nobody has to update it each semester. */
+export function termFor(isoDate: string): { name: string; starts_on: string } {
+  const [y, m] = isoDate.slice(0, 10).split('-').map(Number)
+  return m >= 8 ? { name: `Fall ${y}`, starts_on: `${y}-08-01` } : { name: `Spring ${y}`, starts_on: `${y}-01-01` }
+}
+
+/** The latest class year that has graduated by this date (seniors move to alumni on June 1). */
+export function graduatedClass(isoDate: string) {
+  const [y, m] = isoDate.slice(0, 10).split('-').map(Number)
+  return m >= 6 ? y : y - 1
+}
+
+/** Graduation years a current member can pick. */
+export function classYearOptions(isoDate: string) {
+  const first = graduatedClass(isoDate) + 1
+  return Array.from({ length: 5 }, (_, i) => first + i)
+}
+
 /** "2026-27" style academic year for a date-only value (year starts in August). */
 export function academicYear(isoDate: string) {
   const d = parseDay(isoDate)

@@ -235,7 +235,7 @@
   white-space: nowrap;
 }
 .ui-seg button:hover { color: var(--ui-ink); }
-.ui-seg button.on { background: #fff; color: var(--ui-ink); box-shadow: var(--ui-shadow-1); }
+.ui-seg button.on, .ui-seg button[aria-selected="true"] { background: #fff; color: var(--ui-ink); box-shadow: var(--ui-shadow-1); }
 .ui-seg button.on.present, .ui-seg button.on.good { color: var(--ui-green); }
 .ui-seg button.on.late, .ui-seg button.on.warn { color: var(--ui-amber); }
 .ui-seg button.on.absent, .ui-seg button.on.bad { color: var(--ui-red); }

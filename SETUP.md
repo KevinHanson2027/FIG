@@ -6,10 +6,13 @@ and, optionally, a **Gmail** account for sending emails.
 
 - **Public site** — same look as before, plus a **Member Login** button (top right), a mobile
   menu, an on-site interest form and an **Apply** page that feed the recruiting pipeline.
-- **Member portal** (`/portal`) — everyone gets their own login. The sidebar shows only what
-  their roles allow.
-- **Control Panel** (co-presidents) — approvals, members & roles, year-end transition, settings,
-  activity log.
+- **Member portal** (`/portal`) — everyone gets their own login. Five sections for everyone
+  (Home, Portfolio, My Work, Resources, My Profile), plus a workspace for each role they hold.
+- **Control Panel** (co-presidents) — one page with tabs: Inbox (approvals), Members & roles,
+  Settings (including graduation), Activity.
+
+Built to run itself year to year: the semester and recruiting cycle are worked out from the
+calendar, members keep their own profiles up to date, and new leaders request their roles.
 
 ---
 
@@ -28,8 +31,8 @@ Do these in order. Everything except email (step 5) is required, and email is st
    see the starting roles (both Co-Presidents as admin, each sector's PM, the Marketing team).
    Rows marked **no email** are members who can't sign in until you add an email.
 
-It's safe to run again any time (no data is deleted). Run it **before** deploying the new code,
-then deploy soon after: until the new code is live, the old admin panel can't save changes.
+It's safe to run again any time (no data is deleted). **Whenever an update changes
+`supabase/schema.sql`, run it again before deploying that update.**
 
 ### 2. Supabase sign-in settings
 - **Authentication → URL Configuration**
@@ -60,7 +63,8 @@ You can delete the old `ADMIN_KEY` and `MEMBER_KEY` — the shared passwords are
 1. Supabase → **Authentication → Users → Add user → Create new user**: your school email, a
    password, and tick **Auto Confirm User**.
 2. Go to `/login` and sign in. You're already an admin; finish the short setup screens.
-3. Do the same for Thomas, or send a sign-in link from **Members & Roles** (⋯ → Send sign-in link).
+3. Do the same for Thomas, or send a sign-in link from **Control Panel → Members & roles**
+   (⋯ → Send sign-in link).
 
 ### 5. Outgoing email (recommended, free)
 Without email everything still works — the portal gives you sign-in links to copy, and new
@@ -105,16 +109,17 @@ emailed link → a 2-minute setup: create a password, confirm sector and graduat
 roles (e.g. PPG), add a photo and bio, and share plans (abroad, leadership interest).
 
 **New members (not on the roster):** same button. They add their name and sector, verify their
-email, go through the same setup, and wait. Co-presidents see one card per person under
-**Approvals → New member applications** and click **Approve** (adds the roles they asked for;
-**Analyst only** skips them) or **Approve all**.
+email, go through the same setup, and wait. Co-presidents see one card per person in
+**Control Panel → Inbox** and click **Approve** (adds the roles they asked for; **Analyst only**
+skips them) or **Approve all**.
 
 **Without email set up:** new people use **Request access**. Approve them, then share the
 sign-up link the portal gives you.
 
-What needs approval: new members, role requests and changes to public profiles (bio, photo,
-LinkedIn, name, sector). Members save their own plans, tasks and attendance without approval.
-Co-presidents' own edits go live immediately.
+**What needs a co-president:** new members, role requests and sector moves, all in the Inbox.
+Everything else is self-serve. Members edit their own name, photo, bio and LinkedIn under
+**My Profile**, which shows a live preview of their member card and bio page and goes live when
+they click **Publish**. Every change is recorded in **Control Panel → Activity**.
 
 ## Roles
 
@@ -122,7 +127,7 @@ A member can have several. Everyone is an **Analyst**.
 
 | Role | Gets |
 |---|---|
-| Analyst (everyone) | Home dashboard, profile, portfolio snapshot + sector news, tasks, attendance check-in, resources, market tools, referrals |
+| Analyst (everyone) | Home (what needs you, sector holdings and news), Portfolio (overview, holdings, markets), My Work (tasks, attendance, interviews), Resources, My Profile, referrals |
 | Portfolio Manager | Sector Team: roster (attendance, abroad, leadership interest), assign tasks, take attendance, manage the sector's holdings, post to their sector |
 | PPG Member | Portfolio Performance Group: analytics (risk, technicals, correlation, sector vs ETF), PPG files and assignments |
 | PPG Manager | Everything PPG members get, plus assigning PPG work, PPG meetings, cash balance, and editing the Holdings and Portfolio Reporting pages and reports |
@@ -133,18 +138,21 @@ A member can have several. Everyone is an **Analyst**.
 
 ## Running the year
 
-- **Start of each semester:** Control Panel → **Settings** → Current term (name + first day of
-  classes). Attendance rates count meetings from that date.
+- **Semesters:** nothing to do. The term is worked out from the date (Spring = January–July,
+  Fall = August–December), and attendance rates reset with it.
 - **Meetings:** co-presidents create general meetings (Sector Teams → Attendance); PMs create
-  sector meetings. Open check-in and put the code on screen — members enter it on their phone.
-- **Recruiting:** Recruiting → Settings → set the cycle and open applications. The interest form
-  and `/apply` page feed the pipeline; schedule interviews from a candidate's card; interviewers
-  fill scorecards under **My Interviews**.
-- **End of year:** Control Panel → **Year-End Transition**:
-  1. Graduate seniors (by graduation year) → alumni, hidden from the site.
-  2. Hand off leadership (new co-presidents, PMs, PPG manager, …). Do your own admin removal last.
-  3. Add accepted recruits and send sign-in links.
-  4. Set the new term and recruiting cycle, and work through the handoff checklist.
+  sector meetings. Open check-in and put the code on screen. Members enter it on their phone.
+- **Recruiting:** Recruiting → Settings → open applications. New candidates go into the current
+  semester's cycle unless recruiting names one. Schedule interviews from a candidate's card;
+  interviewers fill in scorecards under **My Work → Interviews**.
+- **End of year (May):**
+  1. Incoming leaders request their roles under **My Profile → Team, plans & roles**. Approve
+     them in the **Inbox**, or assign roles directly in **Members & roles**.
+  2. **Control Panel → Settings → Graduation & handoff** lists the seniors, already checked.
+     Click **Graduate**. They become alumni: hidden from the site, roles removed, profile kept.
+     Graduate the outgoing co-presidents last, after the new ones are admins.
+  3. Accepted recruits sign themselves up (Member Login → Set up your account), or recruiting
+     adds them from the pipeline.
 
 **Ownership handoff (important):** the Supabase project, Vercel project, GitHub repo and FIG
 Gmail should be owned by a shared FIG account or passed to the incoming co-presidents each year.
@@ -160,9 +168,11 @@ Gmail should be owned by a shared FIG account or passed to the incoming co-presi
 ## Troubleshooting
 
 - **“We couldn't find you on the roster”** — their sign-in email doesn't match an active member.
-  Fix the email in Members & Roles.
-- **Link expired or already used** — request a new one from the login page (or Members & Roles →
+  Fix the email in Control Panel → Members & roles.
+- **Link expired or already used** — request a new one from the login page (or Members & roles →
   ⋯ → Send sign-in link).
+- **“Your changes could not be saved”** when publishing a profile — the database is behind the
+  code. Run `supabase/schema.sql` again (step 1).
 - **No admins left** (shouldn't happen — the database blocks removing the last one). In the SQL
   Editor:
   `insert into member_roles (member_id, role) select id, 'admin' from members_directory where email = 'you@student.fairfield.edu';`
@@ -181,7 +191,9 @@ Gmail should be owned by a shared FIG account or passed to the incoming co-presi
   `lib/supabase/admin.ts` on the server only.
 - Key folders: `app/(public)` website · `app/portal` portal · `app/portal/admin` Control Panel ·
   `app/portal/welcome` onboarding · `components/portal` UI kit (`ui.tsx`, `charts.tsx`, …) ·
-  `lib/roles.ts` what each role unlocks · `lib/cms.ts` editable website fields.
+  `lib/roles.ts` what each role unlocks · `lib/cms.ts` editable website fields ·
+  `components/public/MemberProfile.tsx` the member card and bio page, shared by the public
+  Members pages and the profile editor's live preview (change it once, both update).
 - **Add a role:** add it to the role check constraints and helper functions in `schema.sql`, to
   `Role` in `lib/types.ts`, and to `ROLES`/`getAccess` in `lib/roles.ts`.
 - **Add an editable website field:** add it to `lib/cms.ts` and read it on the page with

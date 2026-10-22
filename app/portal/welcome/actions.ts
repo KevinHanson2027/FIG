@@ -46,7 +46,7 @@ export async function finishOnboarding(): Promise<{ ok: boolean; error?: string 
             ? `${m.name} (${m.email}) created an account and is waiting for approval to join ${m.sector}.`
             : `${m.name} (${m.sector}) finished setting up their portal account.`,
           asks.length ? `Requested roles: ${asks.join(', ')}.` : 'No extra roles requested.',
-          ...(change ? ['They also submitted profile updates for the website.'] : []),
+          ...(change ? ['They also asked to switch sectors.'] : []),
         ]
         const origin = await getOrigin()
         await sendEmail({ to, subject: heading, ...brandedEmail({ heading, paragraphs, button: { label: 'Review in the Control Panel', url: `${origin}/portal/admin` } }) })

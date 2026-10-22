@@ -1,6 +1,7 @@
 import 'server-only'
 import { cache } from 'react'
 import { createClient } from '@/lib/supabase/server'
+import { termFor, todayET } from '@/lib/format'
 import type { Sector, SettingsMap } from '@/lib/types'
 
 export const DEFAULT_SETTINGS: SettingsMap = {
@@ -35,7 +36,9 @@ export const getSectors = cache(async (includeInactive = false): Promise<Sector[
   return data as Sector[]
 })
 
-/** Settings the viewer can read, merged over defaults. */
+/** Settings the viewer can read, merged over defaults. The term always comes
+ *  from the calendar, and the recruiting cycle follows it unless recruiting
+ *  names one. */
 export const getSettings = cache(async (): Promise<SettingsMap> => {
   const supabase = await createClient()
   const { data } = await supabase.from('settings').select('key, value')
@@ -43,5 +46,8 @@ export const getSettings = cache(async (): Promise<SettingsMap> => {
   for (const row of data ?? []) {
     if (row.key in merged) merged[row.key] = { ...merged[row.key], ...(row.value as object) }
   }
-  return merged as unknown as SettingsMap
+  const settings = merged as unknown as SettingsMap
+  settings.term = termFor(todayET())
+  if (!settings.recruiting.cycle?.trim()) settings.recruiting.cycle = settings.term.name
+  return settings
 })

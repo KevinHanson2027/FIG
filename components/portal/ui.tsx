@@ -115,6 +115,20 @@ export function Tabs({ tabs, active, basePath, params = {} }: {
   )
 }
 
+/** Tabs that link to separate pages, e.g. the sections of Portfolio or My Work. */
+export function SubNav({ items, label = 'Sections' }: { items: { href: string; label: string; active: boolean; count?: number }[]; label?: string }) {
+  return (
+    <nav className="ui-tabs" aria-label={label}>
+      {items.map(t => (
+        <Link key={t.href} href={t.href} className={`ui-tab${t.active ? ' active' : ''}`} aria-current={t.active ? 'page' : undefined} scroll={false}>
+          {t.label}
+          {t.count !== undefined && t.count > 0 && <span className="count">{t.count}</span>}
+        </Link>
+      ))}
+    </nav>
+  )
+}
+
 export function NoAccess({ what }: { what: string }) {
   return (
     <div className="ui-card">

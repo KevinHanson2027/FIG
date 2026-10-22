@@ -7,6 +7,7 @@ import { day, daysUntil, pct, todayET } from '@/lib/format'
 import type { Attendance, Meeting } from '@/lib/types'
 import { Badge, Card, EmptyState, PageHeader, Stat } from '@/components/portal/ui'
 import { CheckIn } from '@/components/portal/CheckIn'
+import { WorkTabs } from '@/components/portal/SectionTabs'
 
 export const metadata = { title: 'Attendance' }
 
@@ -33,8 +34,9 @@ export default async function AttendancePage() {
 
   return (
     <>
-      <PageHeader title="Attendance" description={`Your attendance for ${settings.term.name}. Excused absences don't count against you.`} />
-      <CheckIn openMeetings={open} />
+      <PageHeader title="My Work" description={`Your attendance for ${settings.term.name}. Excused absences don't count against you.`} />
+      <WorkTabs active="attendance" memberId={member.id} />
+      {open.length > 0 && <CheckIn openMeetings={open} />}
 
       <div className="ui-grid ui-grid-4" style={{ marginBottom: 20 }}>
         <Stat label="Attendance rate" value={s.rate === null ? '—' : pct(s.rate, 0, false)} sub={`${s.rows.length} meeting${s.rows.length === 1 ? '' : 's'} this term`} />

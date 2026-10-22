@@ -3,9 +3,8 @@ import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
-  Activity, CalendarCheck, ChartCandlestick, ChartLine, ChevronsUpDown, FolderOpen, Globe,
-  HeartHandshake, History, House, Inbox, KeyRound, ListChecks, LogOut, Menu as MenuIcon,
-  MessagesSquare, RefreshCcw, Settings, ShieldCheck, SquarePen, UserPlus, UserRound, Users, X,
+  Activity, ChartLine, ChevronsUpDown, FolderOpen, Globe, HeartHandshake, House, KeyRound, ListChecks,
+  LogOut, Menu as MenuIcon, ShieldCheck, SquarePen, UserPlus, UserRound, Users, X,
 } from 'lucide-react'
 import type { Access } from '@/lib/roles'
 import { Avatar } from './Avatar'
@@ -13,25 +12,22 @@ import { FeedbackProvider } from './feedback'
 
 export type ShellBadges = { approvals: number; tasks: number; interviews: number; hasInterviews: boolean }
 
-type NavItem = { href: string; label: string; icon: React.ReactNode; count?: number; tag?: string; exact?: boolean }
+/** `match` lists the routes that belong to this item (its tabs). */
+type NavItem = { href: string; label: string; icon: React.ReactNode; count?: number; tag?: string; exact?: boolean; match?: string[] }
 type NavSection = { label?: string; items: NavItem[] }
 
 const I = 18 // icon size
 
 function buildNav(access: Access, badges: ShellBadges): NavSection[] {
-  const sections: NavSection[] = [
-    {
-      items: [
-        { href: '/portal', label: 'Home', icon: <House size={I} />, exact: true },
-        { href: '/portal/profile', label: 'My Profile', icon: <UserRound size={I} /> },
-        { href: '/portal/portfolio', label: 'Portfolio', icon: <ChartLine size={I} /> },
-        { href: '/portal/tasks', label: 'My Tasks', icon: <ListChecks size={I} />, count: badges.tasks },
-        { href: '/portal/attendance', label: 'Attendance', icon: <CalendarCheck size={I} /> },
-        { href: '/portal/resources', label: 'Resources', icon: <FolderOpen size={I} /> },
-        { href: '/portal/tools', label: 'Market Tools', icon: <ChartCandlestick size={I} /> },
-      ],
-    },
-  ]
+  const sections: NavSection[] = [{
+    items: [
+      { href: '/portal', label: 'Home', icon: <House size={I} />, exact: true },
+      { href: '/portal/portfolio', label: 'Portfolio', icon: <ChartLine size={I} />, match: ['/portal/portfolio', '/portal/tools'] },
+      { href: '/portal/tasks', label: 'My Work', icon: <ListChecks size={I} />, count: badges.tasks + badges.interviews, match: ['/portal/tasks', '/portal/attendance', '/portal/interviews'] },
+      { href: '/portal/resources', label: 'Resources', icon: <FolderOpen size={I} /> },
+      { href: '/portal/profile', label: 'My Profile', icon: <UserRound size={I} />, match: ['/portal/profile', '/portal/account'] },
+    ],
+  }]
 
   const work: NavItem[] = []
   if (access.canManageTeams) {
@@ -40,25 +36,10 @@ function buildNav(access: Access, badges: ShellBadges): NavSection[] {
   }
   if (access.hasPpg) work.push({ href: '/portal/ppg', label: 'Performance Group', icon: <Activity size={I} /> })
   if (access.canRecruit) work.push({ href: '/portal/recruiting', label: 'Recruiting', icon: <UserPlus size={I} /> })
-  if (badges.hasInterviews || access.canRecruit) {
-    work.push({ href: '/portal/interviews', label: 'My Interviews', icon: <MessagesSquare size={I} />, count: badges.interviews })
-  }
-  if (access.canEditContent) work.push({ href: '/portal/content', label: 'Website Content', icon: <SquarePen size={I} /> })
+  if (access.canEditContent) work.push({ href: '/portal/content', label: 'Website', icon: <SquarePen size={I} /> })
   if (access.canManageDonations) work.push({ href: '/portal/donors', label: 'Donor Relations', icon: <HeartHandshake size={I} />, tag: 'Beta' })
+  if (access.isAdmin) work.push({ href: '/portal/admin', label: 'Control Panel', icon: <ShieldCheck size={I} />, count: badges.approvals })
   if (work.length) sections.push({ label: 'Workspaces', items: work })
-
-  if (access.isAdmin) {
-    sections.push({
-      label: 'Control Panel',
-      items: [
-        { href: '/portal/admin', label: 'Approvals', icon: <Inbox size={I} />, count: badges.approvals, exact: true },
-        { href: '/portal/admin/members', label: 'Members & Roles', icon: <ShieldCheck size={I} /> },
-        { href: '/portal/admin/transition', label: 'Year-End Transition', icon: <RefreshCcw size={I} /> },
-        { href: '/portal/admin/settings', label: 'Settings', icon: <Settings size={I} /> },
-        { href: '/portal/admin/activity', label: 'Activity Log', icon: <History size={I} /> },
-      ],
-    })
-  }
   return sections
 }
 
@@ -91,8 +72,9 @@ export function Shell({ member, access, badges, children }: {
     return () => document.removeEventListener('mousedown', onDown)
   }, [menuOpen])
 
+  const under = (base: string) => pathname === base || pathname.startsWith(base + '/')
   const isActive = (item: NavItem) =>
-    item.exact ? pathname === item.href : pathname === item.href || pathname.startsWith(item.href + '/')
+    item.exact ? pathname === item.href : (item.match ?? [item.href]).some(under)
 
   return (
     <FeedbackProvider>

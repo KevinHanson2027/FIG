@@ -2,9 +2,10 @@ import { requireMember } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import type { Task } from '@/lib/types'
 import { PageHeader } from '@/components/portal/ui'
+import { WorkTabs } from '@/components/portal/SectionTabs'
 import MyTasks from './MyTasks'
 
-export const metadata = { title: 'My Tasks' }
+export const metadata = { title: 'My Work' }
 
 export default async function TasksPage() {
   const { member } = await requireMember()
@@ -19,7 +20,8 @@ export default async function TasksPage() {
 
   return (
     <>
-      <PageHeader title="My Tasks" description="Work assigned to you by your PM or the PPG manager. Attach a link to your doc or slides, then submit for review." />
+      <PageHeader title="My Work" description="Assignments from your PM or the PPG manager. Attach a link to your work, then submit it for review." />
+      <WorkTabs active="tasks" memberId={member.id} />
       <MyTasks tasks={tasks} />
     </>
   )

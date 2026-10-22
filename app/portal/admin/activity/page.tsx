@@ -6,6 +6,7 @@ import { ROLES } from '@/lib/roles'
 import { relative, shortDate } from '@/lib/format'
 import type { ActivityEntry, Role } from '@/lib/types'
 import { EmptyState, NoAccess, PageHeader } from '@/components/portal/ui'
+import { AdminTabs } from '../AdminTabs'
 
 export const metadata = { title: 'Activity Log' }
 
@@ -43,8 +44,8 @@ function describe(e: Entry): string {
       if (e.action === 'insert') return `${who} requested ${roleName(d.role, d.sector)}`
       return to(d, 'status') ? `${to(d, 'status') === 'cancelled' ? 'cancelled' : to(d, 'status')} ${who}'s role request` : `updated ${who}'s role request`
     case 'profile_changes':
-      if (e.action === 'insert') return `${who} submitted a profile update`
-      return to(d, 'status') ? `${to(d, 'status')} ${who}'s profile update` : `${who} edited their pending profile update`
+      if (e.action === 'insert') return `${who} asked to switch sectors`
+      return to(d, 'status') ? `${to(d, 'status')} ${who}'s sector change` : `${who} edited their sector change request`
     case 'holdings':
       if (e.action === 'insert') return `added ${who} to holdings`
       if (e.action === 'delete') return `deleted holding ${who}`
@@ -78,7 +79,8 @@ export default async function ActivityPage({ searchParams }: { searchParams: { a
 
   return (
     <>
-      <PageHeader title="Activity Log" description="Who changed what, most recent first. Useful for spotting mistakes and undoing them." />
+      <PageHeader title="Control Panel" description="Who changed what, most recent first. Useful for spotting and undoing mistakes." />
+      <AdminTabs active="activity" />
       <div className="ui-chips" style={{ marginBottom: 16 }}>
         {Object.entries(AREAS).map(([k, v]) => (
           <Link key={k} href={`/portal/admin/activity?area=${k}`} className={`ui-chip${k === area ? ' on' : ''}`}>{v.label}</Link>

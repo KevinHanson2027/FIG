@@ -25,6 +25,17 @@ async function resize(file: File, maxSize: number): Promise<{ blob: Blob; ext: s
   return { blob, ext: keepPng ? 'png' : 'jpg' }
 }
 
+/** Resizes and uploads an image to a public bucket; returns its public URL. */
+export async function uploadImage(file: File, bucket: 'headshots' | 'images', pathPrefix: string, maxSize = 1600) {
+  if (file.size > 25 * 1024 * 1024) throw new Error('That file is over 25 MB. Please choose a smaller image.')
+  const { blob, ext } = await resize(file, maxSize)
+  const supabase = createClient()
+  const path = `${pathPrefix}${Date.now()}.${ext}`
+  const { error } = await supabase.storage.from(bucket).upload(path, blob, { contentType: blob.type, upsert: false })
+  if (error) throw new Error(/row-level|security/i.test(error.message) ? "You don't have permission to upload here." : error.message)
+  return supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl
+}
+
 export function ImageUpload({ value, onChange, bucket, pathPrefix, maxSize = 1600, allowUrl = false, label = 'Upload image', round = false }: {
   value: string
   onChange: (url: string) => void
@@ -44,13 +55,7 @@ export function ImageUpload({ value, onChange, bucket, pathPrefix, maxSize = 160
     setBusy(true)
     setError('')
     try {
-      if (file.size > 25 * 1024 * 1024) throw new Error('That file is over 25 MB. Please choose a smaller image.')
-      const { blob, ext } = await resize(file, maxSize)
-      const supabase = createClient()
-      const path = `${pathPrefix}${Date.now()}.${ext}`
-      const { error: upErr } = await supabase.storage.from(bucket).upload(path, blob, { contentType: blob.type, upsert: false })
-      if (upErr) throw new Error(/row-level|security/i.test(upErr.message) ? "You don't have permission to upload here." : upErr.message)
-      onChange(supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl)
+      onChange(await uploadImage(file, bucket, pathPrefix, maxSize))
     } catch (e) {
       setError((e as Error).message)
     } finally {

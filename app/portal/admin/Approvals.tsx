@@ -57,7 +57,7 @@ export default function Approvals({ applications, roleRequests, profileChanges, 
   if (total === 0) {
     return (
       <div className="ui-card">
-        <EmptyState icon={<Inbox size={22} />} title="You're all caught up">New access requests, role requests and profile updates will appear here.</EmptyState>
+        <EmptyState icon={<Inbox size={22} />} title="You're all caught up">New member applications, role requests and sector moves will appear here.</EmptyState>
       </div>
     )
   }
@@ -76,7 +76,7 @@ export default function Approvals({ applications, roleRequests, profileChanges, 
         </Section>
       )}
       {profileChanges.length > 0 && (
-        <Section icon={<UserRound size={18} />} title="Profile updates" description="Changes to what appears on the public Members pages.">
+        <Section icon={<UserRound size={18} />} title="Change requests" description="Members asking to switch sectors. Approving moves them right away.">
           {profileChanges.map(c => <ProfileChangeRow key={c.id} change={c} />)}
         </Section>
       )}

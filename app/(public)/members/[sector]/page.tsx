@@ -3,95 +3,19 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { getSectors } from '@/lib/data'
+import { MEMBER_HERO, MemberCard, PmSpotlight, isPortfolioManager, type PublicMember } from '@/components/public/MemberProfile'
 
-const MEMBER_HERO = '/Website Assets/Group Photos/Smiling Group Photo %231.JPG'
-const FIG_PLACEHOLDER = '/Website Assets/Logos/FIG Logo.png'
-
-type Member = {
-  id: string
-  name: string
-  title: string | null
-  sector: string
-  email: string | null
-  linkedin_url: string | null
-  bio: string | null
-  headshot_url: string | null
-  sort_order: number
-}
+type Member = PublicMember & { sector: string; sort_order: number }
 
 export async function generateMetadata({ params }: { params: { sector: string } }): Promise<Metadata> {
   const sector = (await getSectors()).find(s => s.slug === params.sector)
   return { title: sector?.name ?? 'Members' }
 }
 
-function isPM(m: Member) {
-  return m.title?.toLowerCase().includes('portfolio manager') ?? false
-}
-
 function SectionHeading({ children }: { children: React.ReactNode }) {
   return (
     <div className="member-section-heading">
       <h2>{children}</h2>
-    </div>
-  )
-}
-
-// ─── Compact card used in analyst grid ────────────────────────────────────────
-function AnalystCard({ m, sectorSlug }: { m: Member; sectorSlug: string }) {
-  const bioUrl = `/members/${sectorSlug}/${m.id}`
-  return (
-    <div className="member-card">
-      <Link href={bioUrl} className="member-card-photo-link">
-        <div className="member-card-photo-wrap">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={m.headshot_url ?? FIG_PLACEHOLDER}
-            alt={m.name}
-            className={m.headshot_url ? 'member-card-photo' : 'member-card-photo is-placeholder'}
-          />
-        </div>
-      </Link>
-      <div className="member-card-body">
-        <Link href={bioUrl} style={{ textDecoration: 'none', color: 'inherit' }}>
-          <h4 className="member-card-name">{m.name}</h4>
-        </Link>
-        <p className="member-card-title">{m.title}</p>
-        <div className="member-card-links">
-          {m.email && <a href={`mailto:${m.email}`} className="member-card-btn member-card-btn-email">Email</a>}
-          {m.linkedin_url && <a href={m.linkedin_url} target="_blank" rel="noopener noreferrer" className="member-card-btn member-card-btn-linkedin">LinkedIn</a>}
-          <Link href={bioUrl} className="member-card-btn member-card-btn-bio">Bio</Link>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ─── Spotlight card used for Portfolio Manager ────────────────────────────────
-function PMSpotlight({ m, sectorSlug }: { m: Member; sectorSlug: string }) {
-  const bioUrl = `/members/${sectorSlug}/${m.id}`
-  return (
-    <div className="pm-spotlight">
-      <Link href={bioUrl} className="pm-spotlight-photo-link">
-        <div className="pm-spotlight-photo-wrap">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={m.headshot_url ?? FIG_PLACEHOLDER}
-            alt={m.name}
-            className={m.headshot_url ? 'pm-spotlight-photo' : 'pm-spotlight-photo is-placeholder'}
-          />
-        </div>
-      </Link>
-      <div className="pm-spotlight-body">
-        <Link href={bioUrl} style={{ textDecoration: 'none', color: 'inherit' }}>
-          <h3 className="pm-spotlight-name">{m.name}</h3>
-        </Link>
-        <p className="pm-spotlight-title">{m.title}</p>
-        <div className="pm-spotlight-links">
-          {m.email && <a href={`mailto:${m.email}`} className="member-card-btn member-card-btn-email">Email</a>}
-          {m.linkedin_url && <a href={m.linkedin_url} target="_blank" rel="noopener noreferrer" className="member-card-btn member-card-btn-linkedin">LinkedIn</a>}
-          <Link href={bioUrl} className="member-card-btn member-card-btn-bio">Full Bio</Link>
-        </div>
-      </div>
     </div>
   )
 }
@@ -134,9 +58,9 @@ export default async function SectorPage({ params }: { params: { sector: string 
     allPMs = data ?? []
   }
 
-  const members  = sectorMembers ?? []
-  const pm       = members.filter(isPM)
-  const analysts = members.filter(m => !isPM(m))
+  const members: Member[] = sectorMembers ?? []
+  const pm       = members.filter(isPortfolioManager)
+  const analysts = members.filter(m => !isPortfolioManager(m))
 
   return (
     <>
@@ -155,8 +79,8 @@ export default async function SectorPage({ params }: { params: { sector: string 
           <>
             <div className="members-grid members-grid-leadership">
               {members.map(m => (
-                // sectorSlug = 'executive-board' so bio back-link returns here
-                <AnalystCard key={m.id} m={m} sectorSlug={slug} />
+                // links stay under executive-board so the bio's back link returns here
+                <MemberCard key={m.id} m={m} href={`/members/${slug}/${m.id}`} />
               ))}
             </div>
 
@@ -165,8 +89,8 @@ export default async function SectorPage({ params }: { params: { sector: string 
                 <SectionHeading>Portfolio Managers</SectionHeading>
                 <div className="members-grid">
                   {allPMs.map(m => (
-                    // sectorSlug = 'executive-board' so back-link returns to this page
-                    <AnalystCard key={m.id} m={m} sectorSlug={slug} />
+                    // links stay under executive-board so the bio's back link returns here
+                    <MemberCard key={m.id} m={m} href={`/members/${slug}/${m.id}`} />
                   ))}
                 </div>
               </>
@@ -187,7 +111,7 @@ export default async function SectorPage({ params }: { params: { sector: string 
               <>
                 <SectionHeading>Portfolio Manager</SectionHeading>
                 <div className="pm-spotlight-wrap">
-                  {pm.map(m => <PMSpotlight key={m.id} m={m} sectorSlug={slug} />)}
+                  {pm.map(m => <PmSpotlight key={m.id} m={m} href={`/members/${slug}/${m.id}`} />)}
                 </div>
               </>
             )}
@@ -197,7 +121,7 @@ export default async function SectorPage({ params }: { params: { sector: string 
               <>
                 <SectionHeading>Analysts</SectionHeading>
                 <div className="members-grid members-grid-analysts">
-                  {analysts.map(m => <AnalystCard key={m.id} m={m} sectorSlug={slug} />)}
+                  {analysts.map(m => <MemberCard key={m.id} m={m} href={`/members/${slug}/${m.id}`} />)}
                 </div>
               </>
             )}

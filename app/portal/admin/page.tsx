@@ -1,13 +1,14 @@
 import Link from 'next/link'
-import { ChevronRight, TriangleAlert, Users } from 'lucide-react'
+import { ChevronRight, TriangleAlert } from 'lucide-react'
 import { requireMember } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { getSectors } from '@/lib/data'
 import type { Member, MemberInternal, ProfileChange, RoleGrant, RoleRequest } from '@/lib/types'
-import { NoAccess, PageHeader, Stat } from '@/components/portal/ui'
+import { NoAccess, PageHeader } from '@/components/portal/ui'
 import Approvals from './Approvals'
+import { AdminTabs } from './AdminTabs'
 
-export const metadata = { title: 'Approvals' }
+export const metadata = { title: 'Control Panel' }
 
 export default async function AdminHome() {
   const { access } = await requireMember()
@@ -45,30 +46,14 @@ export default async function AdminHome() {
   const noEmail = active.filter(m => !m.email).length
   if (noEmail) warnings.push({ text: `${noEmail} active member${noEmail === 1 ? ' has' : 's have'} no email, so they can't sign in`, href: '/portal/admin/members?account=no-email' })
   const noYear = active.filter(m => !m.class_year).length
-  if (noYear) warnings.push({ text: `${noYear} member${noYear === 1 ? ' is' : 's are'} missing a graduation year (needed for the year-end transition)`, href: '/portal/admin/members?account=no-year' })
+  if (noYear) warnings.push({ text: `${noYear} member${noYear === 1 ? ' has' : 's have'} no graduation year, so graduation can't find them`, href: '/portal/admin/members?account=no-year' })
 
-  const activated = active.filter(m => m.user_id).length
+  const waiting = pending.length + allRoleRequests.filter(r => !pendingIds.has(r.member_id)).length + (changeRes.data?.length ?? 0)
 
   return (
     <>
-      <PageHeader title="Approvals" description="Requests from members waiting for a co-president. Approving applies the change right away." />
-      <div className="ui-grid ui-grid-3" style={{ marginBottom: 20 }}>
-        <Stat label="Waiting for you" value={pending.length + allRoleRequests.filter(r => !pendingIds.has(r.member_id)).length + (changeRes.data?.length ?? 0)} sub="Applications, role and profile requests" />
-        <Stat label="Active members" icon={<Users size={15} />} value={active.length} sub={`${sectors.length} sectors`} />
-        <Stat label="Accounts activated" value={`${activated} / ${active.length}`} sub={<Link href="/portal/admin/members?account=not-activated" className="ui-link">Send sign-in links</Link>} />
-      </div>
-
-      {warnings.length > 0 && (
-        <div className="portal-actions">
-          {warnings.map(w => (
-            <Link key={w.text} href={w.href} className="portal-action">
-              <span className="dot amber"><TriangleAlert size={16} /></span>
-              <span>{w.text}</span>
-              <ChevronRight size={16} />
-            </Link>
-          ))}
-        </div>
-      )}
+      <PageHeader title="Control Panel" description={`${active.length} active members · ${active.filter(m => m.user_id).length} signed up`} />
+      <AdminTabs active="inbox" inbox={waiting} />
 
       <Approvals
         applications={pending.map(p => ({
@@ -80,6 +65,22 @@ export default async function AdminHome() {
         profileChanges={(changeRes.data ?? []) as (ProfileChange & { member: Member | null })[]}
         pmBySector={Object.fromEntries(pmBySector)}
       />
+
+      {warnings.length > 0 && (
+        <section className="ui-card" style={{ marginTop: 20 }}>
+          <div className="ui-card-head"><div><h2><TriangleAlert size={18} /> Gaps to fill</h2><p>Things that keep parts of the portal from working fully.</p></div></div>
+          <ul className="ui-list">
+            {warnings.map(w => (
+              <li key={w.text}>
+                <Link href={w.href} className="ui-list-item">
+                  <div className="ui-list-main"><div className="ui-list-title" style={{ fontWeight: 500 }}>{w.text}</div></div>
+                  <ChevronRight size={16} style={{ color: 'var(--ui-faint)' }} />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </>
   )
 }
