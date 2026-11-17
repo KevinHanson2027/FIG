@@ -19,8 +19,7 @@ calendar, members keep their own profiles up to date, and new leaders request th
 
 ## One-time setup (about 20 minutes)
 
-Do these in order. All of them are required. Members sign in with emailed links, so nobody but
-the co-presidents can get in until email (step 5) is set up.
+Do these in order. Email (step 5) is optional; everything else is required.
 
 ### 1. Upgrade the database
 1. Supabase Dashboard → **SQL Editor** → **New query**.
@@ -68,11 +67,12 @@ You can delete the old `ADMIN_KEY` and `MEMBER_KEY` — the shared passwords are
 3. Do the same for Thomas, or send a sign-in link from **Control Panel → Members & roles**
    (⋯ → Send sign-in link).
 
-### 5. Outgoing email (required for member sign-in, free)
-Members sign in by typing their school email and clicking the link we email them. There are no
-passwords to remember, though anyone can set one under My Profile. Supabase's built-in email
-only reaches the project's own team, so the site sends these itself through a Gmail account.
-The same setup sends sign-up links, application and interview emails, and approval notices.
+### 5. Outgoing email (optional, free)
+Members sign in with the club code and their own password (see How people get in), so email
+isn't needed to get in. Setting it up adds **Forgot password?** links that members can use
+without a co-president, self sign-up for new members, and automatic application, interview
+and approval emails. Supabase's built-in email only reaches the project's own team, so the site
+sends these itself through a Gmail account.
 
 Easiest option — a shared FIG Gmail (e.g. `figportal@gmail.com`):
 1. Turn on **2-Step Verification**, then create an **App Password** (Google Account → Security).
@@ -107,23 +107,28 @@ PPG manager can edit every holding; each PM can edit their own sector's.
 
 ## How people get in
 
-**Everyone:** **Member Login** → school email → **Email me a sign-in link** → click the link in
-their inbox. That's the whole sign-in, first time or fiftieth, and they stay signed in on that
-device. Passwords are optional (My Profile → Password).
+**The club code.** Co-presidents choose it in **Control Panel → Settings → Club code** and share
+it at the first meeting. Only a scrambled copy is stored, so write it down. It never works for
+co-presidents, or for anyone who has already chosen a password, so knowing it doesn't let anyone
+into an account that's already set up.
 
-**Existing members (on the roster):** the first link opens a 2-minute setup: confirm sector and
+**Members, the first time:** **Member Login** → **First time signing in? Set up your account** →
+school email + the club code + a password they choose. Then a 2-minute setup: confirm sector and
 graduation year, pick roles (e.g. PPG), add a photo and bio, and share plans (abroad,
-leadership interest). To get everyone started at once: **Control Panel → Members & roles** →
-filter to **Not activated** → select all → **Email sign-in links**.
+leadership interest).
 
-**New members (not on the roster):** same steps. They add their name and sector, go through the
-same setup, and wait. Co-presidents see one card per person in
+**Members, every time after:** school email + their own password. They stay signed in on that
+device until they sign out, and their login lasts until they graduate.
+
+**Forgot password:** with email set up, **Forgot password?** emails them a sign-in link.
+Without it, a co-president opens **Control Panel → Members & roles → ⋯ → Reset password**,
+and the member chooses a new one under **First time signing in?** with the club code.
+
+**New members (not on the roster):** **Request access** on the login page (or self sign-up, if
+email is set up). Once a co-president approves them, they set up their account with the club
+code like everyone else. Co-presidents see one card per person in
 **Control Panel → Inbox** and click **Approve** (adds the roles they asked for; **Analyst only**
 skips them) or **Approve all**.
-
-**Without email set up:** members can't sign themselves in. New people can still use **Request
-access**, and co-presidents can copy a member's sign-in link from Members & roles and send it
-themselves (it expires within the hour).
 
 **What needs a co-president:** new members, role requests and sector moves, all in the Inbox.
 Everything else is self-serve. Members edit their own name, photo, bio and LinkedIn under
@@ -147,6 +152,9 @@ A member can have several. Everyone is an **Analyst**.
 
 ## Running the year
 
+- **New co-presidents:** at the start of your term, set a new club code (Control Panel →
+  Settings) and share it at your first meeting. The old code stops working; members who already
+  have a password aren't affected.
 - **Semesters:** nothing to do. The term is worked out from the date (Spring = January–July,
   Fall = August–December), and attendance rates reset with it.
 - **Meetings:** co-presidents create general meetings (Sector Teams → Attendance); PMs create
@@ -161,8 +169,8 @@ A member can have several. Everyone is an **Analyst**.
   2. **Control Panel → Settings → Graduation & handoff** lists the seniors, already checked.
      Click **Graduate**. They become alumni: hidden from the site, roles removed, profile kept.
      Graduate the outgoing co-presidents last, after the new ones are admins.
-  3. Accepted recruits sign themselves up (Member Login → Email me a sign-in link), or recruiting
-     adds them from the pipeline.
+  3. Accepted recruits are added from the recruiting pipeline (or use Request access), then
+     set up their account with the club code.
 
 **Ownership handoff (important):** the Supabase project, Vercel project, GitHub repo and FIG
 Gmail should be owned by a shared FIG account or passed to the incoming co-presidents each year.
@@ -179,6 +187,14 @@ Gmail should be owned by a shared FIG account or passed to the incoming co-presi
 
 - **“We couldn't find you on the roster”** — their sign-in email doesn't match an active member.
   Fix the email in Control Panel → Members & roles.
+- **A member forgot their password** — Members & roles → ⋯ → **Reset password**. They then use
+  **First time signing in?** with the club code to choose a new one.
+- **A co-president forgot their password** (the club code never works for co-presidents) — with
+  email set up, use **Forgot password?**. Without it, the repo owner deletes their login in
+  Supabase → Authentication → Users, then **Add user** with the same email, a new password and
+  **Auto Confirm User**. The new login links to their roster entry automatically.
+- **“Request rate limit reached”** when a whole room signs in at once — wait a few minutes, or
+  raise the sign-in limit in Supabase → Authentication → Rate Limits.
 - **Link expired or already used** — request a new one from the login page (or Members & roles →
   ⋯ → Send sign-in link).
 - **“Your changes could not be saved”** when publishing a profile — the database is behind the

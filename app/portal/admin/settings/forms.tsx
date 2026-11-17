@@ -1,12 +1,65 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { GraduationCap, HeartHandshake, Layers, Pencil, Plus, UserPlus } from 'lucide-react'
+import { GraduationCap, HeartHandshake, KeyRound, Layers, Pencil, Plus, UserPlus } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { day } from '@/lib/format'
 import type { DonationSettings, Sector, SectorKind, SignupSettings } from '@/lib/types'
 import { Avatar } from '@/components/portal/Avatar'
 import { Modal } from '@/components/portal/Modal'
 import { must, useConfirm, useMutation } from '@/components/portal/feedback'
-import { Badge, Card } from '@/components/portal/ui'
+import { Badge, Card, Notice } from '@/components/portal/ui'
+import { setSignInCode } from '../actions'
+
+/** The club code members use once, with their school email, to choose a
+ *  password. Only a hash is stored, so it can be replaced but not shown. */
+export function SignInCodeCard({ status, ready }: { status: { set_at: string; set_by: string | null } | null; ready: boolean }) {
+  const [code, setCode] = useState('')
+  const { run, pending } = useMutation()
+  const confirm = useConfirm()
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault()
+    const ok = await run(async () => { const r = await setSignInCode(code); if (!r.ok) throw new Error(r.error); return true },
+      { success: status ? 'New code saved. The old one no longer works.' : 'Code saved. Share it at your first meeting.' })
+    if (ok) setCode('')
+  }
+
+  async function turnOff() {
+    if (!(await confirm({
+      title: 'Turn off the club code?',
+      body: 'Members who haven’t set up their account can’t until you set a new code. Everyone who already has a password is unaffected.',
+      confirmLabel: 'Turn off',
+    }))) return
+    await run(async () => { const r = await setSignInCode(null); if (!r.ok) throw new Error(r.error); return true }, { success: 'Club code turned off' })
+  }
+
+  return (
+    <Card title={<><KeyRound size={18} /> Club code</>}
+      description="Share it at the first meeting. Each member uses it once, with their school email, to choose their own password.">
+      <div className="ui-stack" style={{ gap: 14 }}>
+        <div className="ui-row">
+          {status
+            ? <><Badge tone="green">On</Badge><span className="ui-small ui-muted">Set {day(status.set_at)}{status.set_by ? ` by ${status.set_by}` : ''}</span></>
+            : <><Badge tone="amber">Off</Badge><span className="ui-small ui-muted">Members can&apos;t set up their accounts until you choose one.</span></>}
+        </div>
+        <form onSubmit={save} className="ui-row" style={{ alignItems: 'flex-end' }}>
+          <div className="ui-field" style={{ flex: '1 1 180px' }}>
+            <label htmlFor="sc-code">{status ? 'Replace with a new code' : 'Choose a code'}</label>
+            <input id="sc-code" className="ui-input" autoComplete="off" spellCheck={false} placeholder="e.g. FIGFALL26"
+              value={code} onChange={e => setCode(e.target.value)} disabled={!ready} />
+          </div>
+          <button type="submit" className="ui-btn ui-btn-primary" disabled={pending || !ready || code.replace(/\s+/g, '').length < 6}>Save code</button>
+        </form>
+        <p className="ui-hint" style={{ lineHeight: 1.5 }}>
+          At least 6 letters or numbers; capitals don&apos;t matter. It never works for co-presidents, or for anyone who has
+          already chosen a password. It can&apos;t be shown again after you save it, so write it down.
+        </p>
+        {status && <div><button type="button" className="ui-btn ui-btn-ghost ui-btn-sm" onClick={turnOff} disabled={pending}>Turn off</button></div>}
+        {!ready && <Notice tone="warn">Needs SUPABASE_SERVICE_ROLE_KEY. See System status.</Notice>}
+      </div>
+    </Card>
+  )
+}
 
 export type Senior = { id: string; name: string; sector: string; title: string | null; class_year: number; headshot_url: string | null; admin: boolean }
 
@@ -58,7 +111,7 @@ export function GraduationCard({ seniors, nextClass, missingYear, viewerId }: { 
       )}
       <div className="ui-card-foot">
         <p className="ui-small ui-muted" style={{ lineHeight: 1.55 }}>
-          <strong style={{ color: 'var(--ui-ink)' }}>Handing off leadership:</strong> incoming leaders request their role under My Profile, and you approve it in the Inbox. You can also assign roles directly in Members &amp; roles. Graduate outgoing admins last.
+          <strong style={{ color: 'var(--ui-ink)' }}>Handing off leadership:</strong> incoming leaders request their role under My Profile, and you approve it in the Inbox. You can also assign roles directly in Members &amp; roles. Graduate outgoing admins last. New co-presidents should also set a new club code.
           {missingYear > 0 && <> {missingYear} member{missingYear === 1 ? ' has' : 's have'} no graduation year and won&apos;t appear here.</>}
         </p>
       </div>

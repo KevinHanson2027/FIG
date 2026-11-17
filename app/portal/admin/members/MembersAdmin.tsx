@@ -1,6 +1,6 @@
 'use client'
 import { useMemo, useState } from 'react'
-import { Archive, ArchiveRestore, KeyRound, Pencil, Plus, Search, ShieldCheck, Trash2, UserPlus, Users } from 'lucide-react'
+import { Archive, ArchiveRestore, KeyRound, Pencil, Plus, RotateCcw, Search, ShieldCheck, Trash2, UserPlus, Users } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { ROLES } from '@/lib/roles'
 import { pct } from '@/lib/format'
@@ -12,7 +12,7 @@ import { Modal } from '@/components/portal/Modal'
 import { must, useConfirm, useMutation, useToast } from '@/components/portal/feedback'
 import { Badge, EmptyState, Notice } from '@/components/portal/ui'
 import { LinkResults } from '@/components/portal/LinkResults'
-import { addMembers, approveMembers, sendSignInLink, sendSignInLinks, type BulkLinkResult, type NewMember } from '../actions'
+import { addMembers, approveMembers, resetMemberPassword, sendSignInLink, sendSignInLinks, type BulkLinkResult, type NewMember } from '../actions'
 
 export type AdminRow = { member: Member; roles: RoleGrant[]; attendance: number | null }
 type SectorInfo = { name: string; slug: string; kind: SectorKind }
@@ -65,6 +65,16 @@ export default function MembersAdmin({ rows, sectors, initialAccount, canSendLin
     if (!res) return
     if (res.delivery.sent) toast.success(`Sign-in email sent to ${r.member.name}`)
     else setLinkResult({ ok: true, sent: 0, failed: [], links: [{ name: r.member.name, email: r.member.email!, url: res.delivery.url }] })
+  }
+
+  async function resetPassword(r: AdminRow) {
+    if (!(await confirm({
+      title: `Reset ${r.member.name}'s password?`,
+      body: 'They choose a new one on the login page under First time signing in?, using the club code. Their current password keeps working until they do.',
+      confirmLabel: 'Reset password',
+    }))) return
+    const res = await run(async () => { const x = await resetMemberPassword(r.member.id); if (!x.ok) throw new Error(x.error); return x }, { refresh: false })
+    if (res) toast.success(res.codeOn ? `${r.member.name} can now choose a new password with the club code` : 'Done. Set a club code in Settings so they can choose a new password.')
   }
 
   async function linkSelected() {
@@ -200,6 +210,11 @@ export default function MembersAdmin({ rows, sectors, initialAccount, canSendLin
                             {m.status === 'active' && m.email && (
                               <button type="button" role="menuitem" disabled={!canSendLinks} onClick={() => { close(); linkOne(r) }}>
                                 <KeyRound size={15} /> Send sign-in link
+                              </button>
+                            )}
+                            {m.status === 'active' && m.user_id && !r.roles.some(g => g.role === 'admin') && (
+                              <button type="button" role="menuitem" disabled={!canSendLinks} onClick={() => { close(); resetPassword(r) }}>
+                                <RotateCcw size={15} /> Reset password
                               </button>
                             )}
                             <hr />

@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient, hasServiceRole } from '@/lib/supabase/admin'
 import { brandedEmail, isEmailConfigured, sendEmail } from '@/lib/email'
 import { deliverSignInLink, getOrigin, type LinkDelivery } from '@/lib/accounts'
+import { ACCESS_CODE_KEY, ACCESS_CODE_MIN, getAccessCode, hashCode, normalizeCode, type AccessCode } from '@/lib/accessCode'
 
 export type LinkResult = { ok: true; delivery: LinkDelivery } | { ok: false; error: string }
 
@@ -60,6 +61,8 @@ export async function approveMembers(memberIds: string[], withRoles: boolean): P
   const supabase = await createClient()
   const { data } = await supabase.from('members_directory').select('id, name, email, user_id, onboarded_at').in('id', memberIds).eq('status', 'pending')
   const result = { ok: true as const, approved: 0, emailed: 0, links: [] as { name: string; email: string; url: string }[], failed: [] as string[] }
+  // Without email, approved applicants sign in with the club code instead of a link.
+  const useCode = !isEmailConfigured() && Boolean(await getAccessCode())
   for (const m of data ?? []) {
     const { error } = await supabase.rpc('approve_member', { p_member: m.id, p_with_roles: withRoles })
     if (error) { result.failed.push(m.name); continue }
@@ -68,7 +71,7 @@ export async function approveMembers(memberIds: string[], withRoles: boolean): P
     try {
       if (!m.user_id) {
         // Applied without an account (email wasn't set up): send a sign-up link.
-        if (!hasServiceRole()) continue
+        if (!hasServiceRole() || useCode) continue
         const d = await deliverSignInLink({ name: m.name, email: m.email, onboarded_at: m.onboarded_at })
         if (d.sent) result.emailed++
         else result.links.push({ name: m.name, email: m.email, url: d.url })
@@ -92,6 +95,41 @@ export async function approveMembers(memberIds: string[], withRoles: boolean): P
   }
   revalidatePath('/portal', 'layout')
   return result
+}
+
+/** Sets the club's first sign-in code (null turns it off). Only a hash is
+ *  stored, so co-presidents set a new one rather than look it up. */
+export async function setSignInCode(code: string | null): Promise<{ ok: true } | { ok: false; error: string }> {
+  const viewer = await assertAdmin()
+  if (!hasServiceRole()) return { ok: false, error: NO_SERVICE_ROLE }
+  const supabase = await createClient()
+  if (code === null) {
+    const { error } = await supabase.from('settings').delete().eq('key', ACCESS_CODE_KEY)
+    if (error) return { ok: false, error: error.message }
+  } else {
+    if (normalizeCode(code).length < ACCESS_CODE_MIN) return { ok: false, error: `Use at least ${ACCESS_CODE_MIN} letters or numbers.` }
+    const value: AccessCode = { hash: hashCode(code), set_at: new Date().toISOString(), set_by: viewer.member.name }
+    const { error } = await supabase.from('settings').upsert({ key: ACCESS_CODE_KEY, value, is_public: false }, { onConflict: 'key' })
+    if (error) return { ok: false, error: error.message }
+  }
+  revalidatePath('/portal/admin/settings')
+  return { ok: true }
+}
+
+/** Lets a member who forgot their password choose a new one with the club
+ *  code. Their current password keeps working until they do. */
+export async function resetMemberPassword(memberId: string): Promise<{ ok: true; codeOn: boolean } | { ok: false; error: string }> {
+  await assertAdmin()
+  if (!hasServiceRole()) return { ok: false, error: NO_SERVICE_ROLE }
+  const admin = createAdminClient()
+  const { data: m } = await admin.from('members_directory').select('user_id').eq('id', memberId).maybeSingle()
+  if (!m?.user_id) return { ok: false, error: "They haven't set up their account yet, so the club code already works for them." }
+  const { data: isAdmin } = await admin.from('member_roles').select('id').eq('member_id', memberId).eq('role', 'admin').limit(1).maybeSingle()
+  if (isAdmin) return { ok: false, error: "Co-presidents can't use the club code. See SETUP.md (Troubleshooting) to reset a co-president's password." }
+  const { data: u } = await admin.auth.admin.getUserById(m.user_id)
+  const { error } = await admin.auth.admin.updateUserById(m.user_id, { user_metadata: { ...(u.user?.user_metadata ?? {}), password_set: false } })
+  if (error) return { ok: false, error: error.message }
+  return { ok: true, codeOn: Boolean(await getAccessCode()) }
 }
 
 /** Turn down an application: removes it (and its unused login) so the
