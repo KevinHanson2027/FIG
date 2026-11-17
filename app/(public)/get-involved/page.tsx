@@ -1,19 +1,16 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { getPageContent } from '@/lib/getPageContent'
-import { getSectors, getSettings } from '@/lib/data'
-import InterestForm from '@/components/public/InterestForm'
+import { getSettings } from '@/lib/data'
 
 export const metadata: Metadata = { title: 'Get Involved' }
 
 export default async function GetInvolvedPage() {
-  const [db, sectors, settings] = await Promise.all([getPageContent('get-involved'), getSectors(), getSettings()])
+  const [db, settings] = await Promise.all([getPageContent('get-involved'), getSettings()])
   const c = (key: string, fallback: string) => db[key] || fallback
   // Recruiting sets the application form link in the portal; blank = the
   // built-in /apply form, shown only while applications are open.
   const applyUrl = settings.recruiting.form_url?.trim() || (settings.recruiting.applications_open ? '/apply' : '')
-  // Optional external form (set in Website Content). Blank = built-in form that feeds the recruiting pipeline.
-  const externalForm = db['cta_form_url']?.trim() || ''
 
   const appSteps = c('app_steps', `Submit your application\nResume screening\nIn-person interview with a Portfolio Manager`)
     .split('\n').filter(Boolean)
@@ -76,22 +73,14 @@ export default async function GetInvolvedPage() {
         </div>
       </section>
 
-      <section id="interest" className="section" style={{ maxWidth: '1200px', margin: '0 auto', padding: '4rem 2rem' }}>
+      <section id="apply" className="section" style={{ maxWidth: '1200px', margin: '0 auto', padding: '4rem 2rem' }}>
         <div className="newsletter">
           <h3>{c('cta_title', 'Ready to Join?')}</h3>
-          {applyUrl ? (
-            <p>Apply below. Not ready yet? Join our interest list and we&apos;ll keep you posted on events and deadlines.</p>
-          ) : (
-            <p>Join our interest list and we&apos;ll let you know when applications open.</p>
-          )}
-          {!externalForm && <InterestForm sectors={sectors.filter(s => s.kind === 'investment').map(s => s.name)} />}
+          <p>{applyUrl ? 'Click Apply now to fill out our application.' : "Applications aren't open right now. Check back soon."}</p>
           <div className="newsletter-actions">
             {applyUrl.startsWith('/')
               ? <Link href={applyUrl} className="btn">Apply now</Link>
               : applyUrl && <a href={applyUrl} className="btn" target="_blank" rel="noopener noreferrer">Apply now</a>}
-            {externalForm && (
-              <a href={externalForm} className="btn" target="_blank" rel="noopener noreferrer">{c('cta_form_btn', 'Interest Form')}</a>
-            )}
             <Link href="/resources" className="btn" style={{ backgroundColor: '#000' }}>
               View Resources
             </Link>

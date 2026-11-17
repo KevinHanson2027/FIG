@@ -17,7 +17,7 @@ async function loadCandidate(id: string) {
   return { supabase, candidate: data }
 }
 
-/** Invite someone on the interest list to apply. */
+/** Invite a candidate (e.g. a referral) to apply. */
 export async function sendApplicationInvite(candidateId: string): Promise<EmailResult> {
   const viewer = await assertMember()
   if (!viewer.access.canRecruit) return { ok: false, error: 'Only recruiting can send applications.' }

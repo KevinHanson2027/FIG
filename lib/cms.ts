@@ -291,9 +291,7 @@ Exclusive Career & Networking Opportunities: Access alumni mentorship, internshi
       },
       {
         title: 'Call to Action', fields: [
-          { key: 'cta_title',    label: 'CTA Heading',       type: 'text', default: 'Ready to Join?' },
-          { key: 'cta_form_url', label: 'External Interest Form URL (optional)', type: 'url', default: '', hint: 'Leave blank to use the built-in interest form, which sends people straight into the recruiting pipeline.' },
-          { key: 'cta_form_btn', label: 'External Form Button Text', type: 'text', default: 'Interest Form' },
+          { key: 'cta_title',    label: 'CTA Heading',       type: 'text', default: 'Ready to Join?', hint: 'The Apply now button under it opens the application form set in Recruiting → Settings.' },
         ],
       },
     ],

@@ -111,7 +111,7 @@ export default function Pipeline({ candidates, interviews, interviewers, sectors
       {candidates.length === 0 ? (
         <div className="ui-card">
           <EmptyState icon={<UserPlus size={22} />} title={`No candidates in ${cycle || 'this cycle'} yet`}>
-            People who fill out the interest form on the Get Involved page, members&apos; referrals, and applications all land here.
+            Members&apos; referrals, candidates you add, and applications from the built-in application form all land here.
           </EmptyState>
         </div>
       ) : (

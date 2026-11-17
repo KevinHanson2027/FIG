@@ -2,8 +2,8 @@ import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { getSectors, getSettings } from '@/lib/data'
 import { day } from '@/lib/format'
+import Link from 'next/link'
 import ApplicationForm from '@/components/public/ApplicationForm'
-import InterestForm from '@/components/public/InterestForm'
 
 export const metadata: Metadata = { title: 'Apply' }
 
@@ -37,13 +37,10 @@ export default async function ApplyPage({ searchParams }: { searchParams: { emai
             <ApplicationForm sectors={investment} cycle={rec.cycle} initialEmail={searchParams.email ?? ''} />
           </>
         ) : (
-          <>
-            <div className="public-form-intro">
-              <h2>Applications are closed right now</h2>
-              <p>Join our interest list and we&apos;ll email you as soon as the next application cycle opens.</p>
-            </div>
-            <InterestForm sectors={investment} />
-          </>
+          <div className="public-form-intro">
+            <h2>Applications are closed right now</h2>
+            <p>Check back soon. Our recruiting timeline is on the <Link href="/get-involved">Get Involved</Link> page.</p>
+          </div>
         )}
       </section>
     </>

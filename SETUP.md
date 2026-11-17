@@ -5,7 +5,8 @@ Everything runs on free tiers: **Vercel** (hosting), **Supabase** (database, log
 and, optionally, a **Gmail** account for sending emails.
 
 - **Public site** — same look as before, plus a **Member Login** button (top right), a mobile
-  menu, an on-site interest form and an **Apply** page that feed the recruiting pipeline.
+  menu, and an **Apply now** button on Get Involved that opens the application form set in
+  Recruiting → Settings.
 - **Member portal** (`/portal`) — everyone gets their own login. Five sections for everyone
   (Home, Portfolio, My Work, Resources, My Profile), plus a workspace for each role they hold.
 - **Control Panel** (co-presidents) — one page with tabs: Inbox (approvals), Members & roles,
@@ -140,7 +141,7 @@ A member can have several. Everyone is an **Analyst**.
 | PPG Member | Portfolio Performance Group: analytics (risk, technicals, correlation, sector vs ETF), PPG files and assignments |
 | PPG Manager | Everything PPG members get, plus assigning PPG work, PPG meetings, cash balance, and editing the Holdings and Portfolio Reporting pages and reports |
 | Marketing | Website Content: edit text, links and images on every page; publish reports |
-| Recruiting | Pipeline (interest form, referrals, applications), interviews, application settings |
+| Recruiting | Pipeline (referrals and candidates), interviews, the application form link |
 | Donor Relations *(beta)* | Gifts received, donations made, the 5% giving target, receipts to send |
 | Admin (Co-Presidents) | Everything, plus the Control Panel |
 

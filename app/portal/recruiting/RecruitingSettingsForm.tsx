@@ -27,7 +27,7 @@ export default function RecruitingSettingsForm({ initial }: { initial: Recruitin
             <div className="ui-field">
               <label htmlFor="rs-cycle">Current cycle</label>
               <input id="rs-cycle" className="ui-input" required value={f.cycle} onChange={e => setF(x => ({ ...x, cycle: e.target.value }))} placeholder="Spring 2027" />
-              <span className="ui-hint">New interest forms, referrals and applications go into this cycle.</span>
+              <span className="ui-hint">New referrals and applications go into this cycle.</span>
             </div>
             <div className="ui-field">
               <label htmlFor="rs-deadline">Application deadline</label>
