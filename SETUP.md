@@ -18,7 +18,8 @@ calendar, members keep their own profiles up to date, and new leaders request th
 
 ## One-time setup (about 20 minutes)
 
-Do these in order. Everything except email (step 5) is required, and email is strongly recommended.
+Do these in order. All of them are required. Members sign in with emailed links, so nobody but
+the co-presidents can get in until email (step 5) is set up.
 
 ### 1. Upgrade the database
 1. Supabase Dashboard → **SQL Editor** → **New query**.
@@ -66,10 +67,11 @@ You can delete the old `ADMIN_KEY` and `MEMBER_KEY` — the shared passwords are
 3. Do the same for Thomas, or send a sign-in link from **Control Panel → Members & roles**
    (⋯ → Send sign-in link).
 
-### 5. Outgoing email (recommended, free)
-Without email everything still works — the portal gives you sign-in links to copy, and new
-people use **Request access** instead of signing themselves up. With email, invites, password
-resets, application/interview emails, approval notices and self sign-up are automatic.
+### 5. Outgoing email (required for member sign-in, free)
+Members sign in by typing their school email and clicking the link we email them. There are no
+passwords to remember, though anyone can set one under My Profile. Supabase's built-in email
+only reaches the project's own team, so the site sends these itself through a Gmail account.
+The same setup sends sign-up links, application and interview emails, and approval notices.
 
 Easiest option — a shared FIG Gmail (e.g. `figportal@gmail.com`):
 1. Turn on **2-Step Verification**, then create an **App Password** (Google Account → Security).
@@ -104,17 +106,23 @@ PPG manager can edit every holding; each PM can edit their own sector's.
 
 ## How people get in
 
-**Existing members (on the roster):** `/login` → **Set up your account** → school email → open the
-emailed link → a 2-minute setup: create a password, confirm sector and graduation year, pick
-roles (e.g. PPG), add a photo and bio, and share plans (abroad, leadership interest).
+**Everyone:** **Member Login** → school email → **Email me a sign-in link** → click the link in
+their inbox. That's the whole sign-in, first time or fiftieth, and they stay signed in on that
+device. Passwords are optional (My Profile → Password).
 
-**New members (not on the roster):** same button. They add their name and sector, verify their
-email, go through the same setup, and wait. Co-presidents see one card per person in
+**Existing members (on the roster):** the first link opens a 2-minute setup: confirm sector and
+graduation year, pick roles (e.g. PPG), add a photo and bio, and share plans (abroad,
+leadership interest). To get everyone started at once: **Control Panel → Members & roles** →
+filter to **Not activated** → select all → **Email sign-in links**.
+
+**New members (not on the roster):** same steps. They add their name and sector, go through the
+same setup, and wait. Co-presidents see one card per person in
 **Control Panel → Inbox** and click **Approve** (adds the roles they asked for; **Analyst only**
 skips them) or **Approve all**.
 
-**Without email set up:** new people use **Request access**. Approve them, then share the
-sign-up link the portal gives you.
+**Without email set up:** members can't sign themselves in. New people can still use **Request
+access**, and co-presidents can copy a member's sign-in link from Members & roles and send it
+themselves (it expires within the hour).
 
 **What needs a co-president:** new members, role requests and sector moves, all in the Inbox.
 Everything else is self-serve. Members edit their own name, photo, bio and LinkedIn under
@@ -142,8 +150,9 @@ A member can have several. Everyone is an **Analyst**.
   Fall = August–December), and attendance rates reset with it.
 - **Meetings:** co-presidents create general meetings (Sector Teams → Attendance); PMs create
   sector meetings. Open check-in and put the code on screen. Members enter it on their phone.
-- **Recruiting:** Recruiting → Settings → open applications. New candidates go into the current
-  semester's cycle unless recruiting names one. Schedule interviews from a candidate's card;
+- **Recruiting:** Recruiting → Settings holds the **application form link** (the Google Form
+  behind the Apply button on Get Involved; leave it blank to use the built-in application).
+  New candidates go into the current semester's cycle unless recruiting names one. Schedule interviews from a candidate's card;
   interviewers fill in scorecards under **My Work → Interviews**.
 - **End of year (May):**
   1. Incoming leaders request their roles under **My Profile → Team, plans & roles**. Approve
@@ -151,7 +160,7 @@ A member can have several. Everyone is an **Analyst**.
   2. **Control Panel → Settings → Graduation & handoff** lists the seniors, already checked.
      Click **Graduate**. They become alumni: hidden from the site, roles removed, profile kept.
      Graduate the outgoing co-presidents last, after the new ones are admins.
-  3. Accepted recruits sign themselves up (Member Login → Set up your account), or recruiting
+  3. Accepted recruits sign themselves up (Member Login → Email me a sign-in link), or recruiting
      adds them from the pipeline.
 
 **Ownership handoff (important):** the Supabase project, Vercel project, GitHub repo and FIG

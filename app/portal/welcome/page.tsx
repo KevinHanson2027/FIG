@@ -18,8 +18,7 @@ export default async function WelcomePage({ searchParams }: { searchParams: { ed
   if (m.status === 'active' && m.onboarded_at) redirect('/portal')
 
   const supabase = await createClient()
-  const [{ data: userData }, sectors, requestsRes, internalRes, changeRes] = await Promise.all([
-    supabase.auth.getUser(),
+  const [sectors, requestsRes, internalRes, changeRes] = await Promise.all([
     getSectors(),
     supabase.from('role_requests').select('*').eq('member_id', m.id).order('created_at'),
     supabase.from('member_internal').select('*').eq('member_id', m.id).maybeSingle(),
@@ -31,7 +30,6 @@ export default async function WelcomePage({ searchParams }: { searchParams: { ed
     return <Waiting member={m} requests={requests.filter(r => r.status !== 'cancelled')} />
   }
 
-  const hasPassword = viewer.authMethods.includes('password') || Boolean(userData.user?.user_metadata?.password_set)
   return (
     <Onboarding
       member={m}
@@ -40,7 +38,6 @@ export default async function WelcomePage({ searchParams }: { searchParams: { ed
       internal={(internalRes.data as MemberInternal | null) ?? null}
       pendingChange={(changeRes.data as ProfileChange | null) ?? null}
       sectors={sectors.map(s => ({ name: s.name, kind: s.kind }))}
-      needsPassword={!hasPassword}
       initialStep={searchParams.step}
     />
   )

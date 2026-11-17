@@ -63,18 +63,18 @@ export type LinkDelivery =
   | { sent: true }
   | { sent: false; url: string; mailto: string }
 
-type Purpose = 'activate' | 'reset' | 'apply'
+type Purpose = 'activate' | 'signin' | 'apply'
 
 const COPY: Record<Purpose, { heading: string; body: string; button: string }> = {
   activate: {
     heading: 'Your FIG member account is ready',
-    body: 'You have been added to the Fairfield Investment Group member portal. Use the button below to create your password and set up your profile — it takes about two minutes.',
+    body: 'You have been added to the Fairfield Investment Group member portal. Use the button below to sign in and set up your profile. It takes about two minutes, and you don’t need a password.',
     button: 'Set up my account',
   },
-  reset: {
-    heading: 'Sign in to the FIG portal',
-    body: 'Use the button below to sign in and choose a new password.',
-    button: 'Choose a new password',
+  signin: {
+    heading: 'Your FIG sign-in link',
+    body: 'Use the button below to sign in to the FIG member portal. No password needed.',
+    button: 'Sign in',
   },
   apply: {
     heading: 'Confirm your email to join FIG',
@@ -85,11 +85,12 @@ const COPY: Record<Purpose, { heading: string; body: string; button: string }> =
 
 /** Email the sign-in link if SMTP is set up; otherwise return it so a
  *  co-president can share it (copy, or open their own email app).
- *  Members who haven't finished setup land in onboarding. */
+ *  The link signs the member in; anyone who hasn't finished setup lands in
+ *  onboarding, everyone else on the portal home page. */
 export async function deliverSignInLink(member: { name: string; email: string; onboarded_at?: string | null }, purpose?: Purpose): Promise<LinkDelivery> {
-  const next = member.onboarded_at ? '/portal/account?reset=1' : '/portal/welcome'
+  const next = member.onboarded_at ? '/portal' : '/portal/welcome'
   const { url } = await createSignInLink(member.email, next)
-  const copy = COPY[purpose ?? (member.onboarded_at ? 'reset' : 'activate')]
+  const copy = COPY[purpose ?? (member.onboarded_at ? 'signin' : 'activate')]
   const first = member.name.split(' ')[0]
   const paragraphs = [`Hi ${first},`, copy.body]
   const footnote = 'This link works once and expires soon. If it stops working, request a new one from the login page.'

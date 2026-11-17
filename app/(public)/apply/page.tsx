@@ -1,20 +1,18 @@
 import type { Metadata } from 'next'
-import { createClient } from '@/lib/supabase/server'
-import { getSectors } from '@/lib/data'
+import { redirect } from 'next/navigation'
+import { getSectors, getSettings } from '@/lib/data'
 import { day } from '@/lib/format'
-import type { RecruitingSettings } from '@/lib/types'
 import ApplicationForm from '@/components/public/ApplicationForm'
 import InterestForm from '@/components/public/InterestForm'
 
 export const metadata: Metadata = { title: 'Apply' }
 
 export default async function ApplyPage({ searchParams }: { searchParams: { email?: string } }) {
-  const supabase = await createClient()
-  const [{ data }, sectors] = await Promise.all([
-    supabase.from('settings').select('value').eq('key', 'recruiting').maybeSingle(),
-    getSectors(),
-  ])
-  const rec = (data?.value ?? { cycle: '', applications_open: false, deadline: null, intro: '' }) as RecruitingSettings
+  const [settings, sectors] = await Promise.all([getSettings(), getSectors()])
+  const rec = settings.recruiting
+  // When recruiting uses an outside form (e.g. Google Forms), /apply and the
+  // application emails that link here go straight to it.
+  if (rec.form_url?.trim()) redirect(rec.form_url.trim())
   const investment = sectors.filter(s => s.kind === 'investment').map(s => s.name)
 
   return (

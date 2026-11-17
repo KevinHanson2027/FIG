@@ -199,7 +199,7 @@ export default function MembersAdmin({ rows, sectors, initialAccount, canSendLin
                             {m.status === 'active' && <button type="button" role="menuitem" onClick={() => { close(); setRolesFor(r) }}><ShieldCheck size={15} /> Roles &amp; title</button>}
                             {m.status === 'active' && m.email && (
                               <button type="button" role="menuitem" disabled={!canSendLinks} onClick={() => { close(); linkOne(r) }}>
-                                <KeyRound size={15} /> {m.user_id ? 'Send password reset' : 'Send sign-in link'}
+                                <KeyRound size={15} /> Send sign-in link
                               </button>
                             )}
                             <hr />

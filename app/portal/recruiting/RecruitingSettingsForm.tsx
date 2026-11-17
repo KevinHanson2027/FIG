@@ -7,13 +7,15 @@ import { Card, Notice } from '@/components/portal/ui'
 import { must, useMutation } from '@/components/portal/feedback'
 
 export default function RecruitingSettingsForm({ initial }: { initial: RecruitingSettings }) {
-  const [f, setF] = useState({ ...initial, deadline: initial.deadline ?? '', intro: initial.intro ?? '' })
+  const [f, setF] = useState({ ...initial, deadline: initial.deadline ?? '', intro: initial.intro ?? '', form_url: initial.form_url ?? '' })
   const { run, pending } = useMutation()
   const cycleChanged = f.cycle.trim() !== initial.cycle
 
   async function save(e: React.FormEvent) {
     e.preventDefault()
-    const value: RecruitingSettings = { cycle: f.cycle.trim(), applications_open: f.applications_open, deadline: f.deadline || null, intro: f.intro.trim() }
+    const formUrl = f.form_url.trim()
+    if (formUrl && !/^https:\/\//.test(formUrl)) return run(async () => { throw new Error('The application form link should start with https://') }, { refresh: false })
+    const value: RecruitingSettings = { cycle: f.cycle.trim(), applications_open: f.applications_open, deadline: f.deadline || null, intro: f.intro.trim(), form_url: formUrl }
     await run(async () => must(await createClient().from('settings').upsert({ key: 'recruiting', value, is_public: true }, { onConflict: 'key' })), { success: 'Recruiting settings saved' })
   }
 
@@ -31,6 +33,11 @@ export default function RecruitingSettingsForm({ initial }: { initial: Recruitin
               <label htmlFor="rs-deadline">Application deadline</label>
               <input id="rs-deadline" className="ui-input" type="date" value={f.deadline} onChange={e => setF(x => ({ ...x, deadline: e.target.value }))} />
             </div>
+          </div>
+          <div className="ui-field">
+            <label htmlFor="rs-form">Application form link</label>
+            <input id="rs-form" className="ui-input" type="url" value={f.form_url} onChange={e => setF(x => ({ ...x, form_url: e.target.value }))} placeholder="https://forms.gle/…" />
+            <span className="ui-hint">The Apply button on Get Involved opens this form, and so do the application emails sent from the pipeline. Leave it blank to use the built-in application, which only shows while applications are open.</span>
           </div>
           {cycleChanged && <Notice tone="info">Starting a new cycle gives you a fresh, empty pipeline. Past cycles stay available from the cycle picker.</Notice>}
           <label className="ui-switch">

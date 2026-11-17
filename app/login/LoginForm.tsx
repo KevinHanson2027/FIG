@@ -4,13 +4,14 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, CircleCheck } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import { joinFig, requestAccess, sendPasswordReset, startAccount } from './actions'
+import { emailSignIn, joinFig, requestAccess } from './actions'
 
-type Mode = 'signin' | 'start' | 'join' | 'reset' | 'request'
+// 'email' (sign-in link, the default) | 'password' (for anyone who set one)
+type Mode = 'email' | 'password' | 'join' | 'request'
 
 export default function LoginForm({ next, initialError, sectors }: { next: string; initialError: string; sectors: string[] }) {
   const router = useRouter()
-  const [mode, setMode] = useState<Mode>('signin')
+  const [mode, setMode] = useState<Mode>('email')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [name, setName] = useState('')
@@ -21,10 +22,9 @@ export default function LoginForm({ next, initialError, sectors }: { next: strin
   const [done, setDone] = useState('')
 
   const headings: Record<Mode, { title: string; sub: string }> = {
-    signin: { title: 'Member Login', sub: 'Sign in to the FIG member portal' },
-    start: { title: 'Set up your account', sub: "Enter your school email. Members on the roster get a link right away; new members can apply." },
-    join: { title: 'Join the member portal', sub: `${email} isn't on the roster yet. Tell us who you are — you'll set up your roles next, and a co-president will approve you.` },
-    reset: { title: 'Reset your password', sub: "Enter your email and we'll send you a link to choose a new password." },
+    email: { title: 'Member Login', sub: "Enter your school email and we'll send you a link to sign in. No password needed, even the first time." },
+    password: { title: 'Member Login', sub: 'Sign in with the password you set in the portal.' },
+    join: { title: 'Join the member portal', sub: `${email} isn't on the roster yet. Tell us who you are. You'll pick your roles next, and a co-president will approve you.` },
     request: { title: 'Request access', sub: 'Tell us who you are and a co-president will approve you and send a link to set up your account.' },
   }
 
@@ -44,15 +44,15 @@ export default function LoginForm({ next, initialError, sectors }: { next: strin
   const signIn = (e: React.FormEvent) => { e.preventDefault(); run(async () => {
     const { error } = await createClient().auth.signInWithPassword({ email: email.trim(), password })
     if (error) {
-      setError(/invalid login/i.test(error.message) ? "That email and password don't match. First time here? Set up your account below." : error.message)
+      setError(/invalid login/i.test(error.message) ? "That email and password don't match. Never set a password? Use a sign-in link instead." : error.message)
       return
     }
     router.replace(next)
     router.refresh()
   }) }
 
-  const start = (e: React.FormEvent) => { e.preventDefault(); run(async () => {
-    const res = await startAccount(email)
+  const sendLink = (e: React.FormEvent) => { e.preventDefault(); run(async () => {
+    const res = await emailSignIn(email)
     if (res.status === 'sent') setDone(res.message)
     else if (res.status === 'join') setMode('join')
     else if (res.status === 'fallback') setMode('request')
@@ -61,12 +61,6 @@ export default function LoginForm({ next, initialError, sectors }: { next: strin
 
   const join = (e: React.FormEvent) => { e.preventDefault(); run(async () => {
     const res = await joinFig({ email, name, sector })
-    if (res.ok) setDone(res.message)
-    else setError(res.message)
-  }) }
-
-  const reset = (e: React.FormEvent) => { e.preventDefault(); run(async () => {
-    const res = await sendPasswordReset(email)
     if (res.ok) setDone(res.message)
     else setError(res.message)
   }) }
@@ -80,7 +74,7 @@ export default function LoginForm({ next, initialError, sectors }: { next: strin
   const h = headings[mode]
   const emailField = (id: string, autoFocus = true) => (
     <div className="ui-field">
-      <label htmlFor={id}>{mode === 'signin' ? 'Email' : 'School email'}</label>
+      <label htmlFor={id}>School email</label>
       <input id={id} className="ui-input" type="email" autoComplete="email" required autoFocus={autoFocus}
         value={email} onChange={e => setEmail(e.target.value)} placeholder="first.last@student.fairfield.edu" />
     </div>
@@ -100,7 +94,7 @@ export default function LoginForm({ next, initialError, sectors }: { next: strin
       </div>
     </>
   )
-  const back = <button type="button" className="login-back" onClick={() => switchTo('signin')}><ArrowLeft size={16} /> Back to sign in</button>
+  const back = <button type="button" className="login-back" onClick={() => switchTo('email')}><ArrowLeft size={16} /> Back to sign in</button>
 
   return (
     <div className="login-page">
@@ -120,41 +114,35 @@ export default function LoginForm({ next, initialError, sectors }: { next: strin
           <div className="login-done" role="status">
             <CircleCheck size={28} />
             <p>{done}</p>
-            <button type="button" className="ui-btn ui-btn-secondary ui-btn-block" onClick={() => switchTo('signin')}>Back to sign in</button>
+            <button type="button" className="ui-btn ui-btn-secondary ui-btn-block" onClick={() => switchTo('email')}>Back to sign in</button>
           </div>
-        ) : mode === 'signin' ? (
-          <form onSubmit={signIn} className="ui-form">
+        ) : mode === 'email' ? (
+          <form onSubmit={sendLink} className="ui-form">
             {emailField('email')}
+            <button type="submit" className="ui-btn ui-btn-primary ui-btn-block" disabled={busy} style={{ height: 44 }}>{busy ? 'Sending…' : 'Email me a sign-in link'}</button>
+            <div className="login-alt">
+              <span>Set a password in the portal?</span>
+              <button type="button" className="login-text-btn" onClick={() => switchTo('password')}>Sign in with password</button>
+            </div>
+          </form>
+        ) : mode === 'password' ? (
+          <form onSubmit={signIn} className="ui-form">
+            {emailField('pw-email')}
             <div className="ui-field">
-              <div className="ui-spread">
-                <label htmlFor="password" className="ui-label">Password</label>
-                <button type="button" className="login-text-btn" onClick={() => switchTo('reset')}>Forgot password?</button>
-              </div>
-              <input id="password" className="ui-input" type="password" autoComplete="current-password" required value={password} onChange={e => setPassword(e.target.value)} />
+              <label htmlFor="password">Password</label>
+              <input id="password" className="ui-input" type="password" autoComplete="current-password" required autoFocus value={password} onChange={e => setPassword(e.target.value)} />
             </div>
             <button type="submit" className="ui-btn ui-btn-primary ui-btn-block" disabled={busy} style={{ height: 44 }}>{busy ? 'Signing in…' : 'Sign in'}</button>
             <div className="login-alt">
-              <span>First time here?</span>
-              <button type="button" className="login-text-btn" onClick={() => switchTo('start')}>Set up your account</button>
+              <span>Forgot it?</span>
+              <button type="button" className="login-text-btn" onClick={() => switchTo('email')}>Email me a sign-in link</button>
             </div>
-          </form>
-        ) : mode === 'start' ? (
-          <form onSubmit={start} className="ui-form">
-            {emailField('start-email')}
-            <button type="submit" className="ui-btn ui-btn-primary ui-btn-block" disabled={busy} style={{ height: 44 }}>{busy ? 'Checking…' : 'Continue'}</button>
-            {back}
           </form>
         ) : mode === 'join' ? (
           <form onSubmit={join} className="ui-form">
             {nameAndSector}
             <button type="submit" className="ui-btn ui-btn-primary ui-btn-block" disabled={busy} style={{ height: 44 }}>{busy ? 'Creating…' : 'Create my account'}</button>
-            <button type="button" className="login-back" onClick={() => switchTo('start')}><ArrowLeft size={16} /> Use a different email</button>
-          </form>
-        ) : mode === 'reset' ? (
-          <form onSubmit={reset} className="ui-form">
-            {emailField('reset-email')}
-            <button type="submit" className="ui-btn ui-btn-primary ui-btn-block" disabled={busy} style={{ height: 44 }}>{busy ? 'Sending…' : 'Email me a link'}</button>
-            {back}
+            <button type="button" className="login-back" onClick={() => switchTo('email')}><ArrowLeft size={16} /> Use a different email</button>
           </form>
         ) : (
           <form onSubmit={request} className="ui-form">

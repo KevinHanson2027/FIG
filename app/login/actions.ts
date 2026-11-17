@@ -41,29 +41,32 @@ async function logEmail(email: string, purpose: string) {
   await createAdminClient().from('email_link_log').insert({ email, purpose })
 }
 
-/** "Set up your account": roster members get a link straight away;
- *  anyone else is asked for their name and team so they can apply. */
-export async function startAccount(rawEmail: string): Promise<StartResult> {
+/** "Email me a sign-in link": the one way in for everyone, first time or
+ *  not. Roster members (and applicants) get a link straight away; anyone
+ *  else is asked for their name and team so they can apply. */
+export async function emailSignIn(rawEmail: string): Promise<StartResult> {
   const email = rawEmail.trim().toLowerCase()
   if (!EMAIL.test(email)) return { status: 'error', message: 'Please enter a valid email address.' }
-  if (!hasServiceRole() || !isEmailConfigured()) return { status: 'fallback' }
-
-  const limited = await rateLimited(email)
-  if (limited) return { status: 'error', message: limited }
+  if (!hasServiceRole()) return { status: 'fallback' }
 
   const { data: member } = await createAdminClient()
     .from('members_directory')
-    .select('name, email, status, user_id, onboarded_at')
+    .select('name, email, status, onboarded_at')
     .eq('email', email)
     .maybeSingle()
 
-  if (member?.status === 'alumni') return { status: 'error', message: 'That membership is archived. Please contact a co-president.' }
-  if (member?.status === 'pending' && member.user_id && member.onboarded_at) {
-    return { status: 'error', message: 'Your application is with the co-presidents. Sign in with your password to check on it.' }
+  if (!isEmailConfigured()) {
+    return member
+      ? { status: 'error', message: "Email sign-in isn't switched on yet. Ask a co-president to send you a sign-in link." }
+      : { status: 'fallback' }
   }
+  const limited = await rateLimited(email)
+  if (limited) return { status: 'error', message: limited }
+
+  if (member?.status === 'alumni') return { status: 'error', message: 'That membership is archived. Please contact a co-president.' }
   if (!member) {
     const settings = await signupSettings()
-    if (!settings.open) return { status: 'error', message: "New member sign-up is closed right now. Ask a co-president to add you." }
+    if (!settings.open) return { status: 'error', message: "We couldn't find that email on the roster, and new member sign-up is closed right now. Ask a co-president to add you." }
     if (!domainAllowed(email, settings.domains)) {
       return { status: 'error', message: `Please use your school email (${settings.domains.map(d => `@${d}`).join(' or ')}).` }
     }
@@ -71,9 +74,9 @@ export async function startAccount(rawEmail: string): Promise<StartResult> {
   }
 
   try {
-    await deliverSignInLink({ name: member.name, email, onboarded_at: member.onboarded_at }, member.status === 'pending' ? 'apply' : undefined)
+    await deliverSignInLink({ name: member.name, email, onboarded_at: member.onboarded_at }, member.status === 'pending' && !member.onboarded_at ? 'apply' : undefined)
     await logEmail(email, 'sign_in')
-    return { status: 'sent', message: `We sent a link to ${email}. It can take a minute — check your junk folder too.` }
+    return { status: 'sent', message: `Check your inbox: we sent a sign-in link to ${email}. It can take a minute, so check junk too.` }
   } catch (e) {
     console.error('sign-in link failed', e)
     return { status: 'error', message: "We couldn't send the email. Please try again, or ask a co-president for a link." }
@@ -111,28 +114,6 @@ export async function joinFig(input: { email: string; name: string; sector: stri
   } catch (e) {
     console.error('apply link failed', e)
     return { ok: false, message: "We couldn't send the email. Please try again in a minute." }
-  }
-}
-
-/** "Forgot password": email a one-time link to set a new one. */
-export async function sendPasswordReset(rawEmail: string): Promise<Result> {
-  const email = rawEmail.trim().toLowerCase()
-  if (!EMAIL.test(email)) return { ok: false, message: 'Please enter a valid email address.' }
-  if (!hasServiceRole() || !isEmailConfigured()) {
-    return { ok: false, message: "Password reset emails aren't set up yet. Ask a co-president to send you a link from the portal." }
-  }
-  const limited = await rateLimited(email)
-  if (limited) return { ok: false, message: limited }
-
-  const { data: member } = await createAdminClient().from('members_directory').select('name, status, onboarded_at').eq('email', email).maybeSingle()
-  if (!member || member.status === 'alumni') return { ok: false, message: "We couldn't find an active member with that email." }
-  try {
-    await deliverSignInLink({ name: member.name, email, onboarded_at: member.onboarded_at })
-    await logEmail(email, 'reset')
-    return { ok: true, message: `We sent a link to ${email}. It can take a minute — check your junk folder too.` }
-  } catch (e) {
-    console.error('reset link failed', e)
-    return { ok: false, message: "We couldn't send the email. Please try again, or ask a co-president for a link." }
   }
 }
 

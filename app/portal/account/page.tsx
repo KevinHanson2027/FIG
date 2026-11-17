@@ -13,7 +13,7 @@ export default async function AccountPage({ searchParams }: { searchParams: { re
     <>
       <PageHeader
         title={setup ? `Choose a new password, ${firstName(member.name)}` : 'My Profile'}
-        description={setup ? "You're signed in. Set a new password so you can sign in with your email next time." : `You sign in with ${email}.`}
+        description={setup ? "You're signed in. Set a new password so you can sign in with your email next time." : `You sign in as ${email} with an emailed link. A password is optional: set one here if you'd rather type it.`}
       />
       {!setup && <ProfileTabs active="password" />}
       <div style={{ maxWidth: 520 }}>

@@ -314,6 +314,7 @@ export type RecruitingSettings = {
   applications_open: boolean
   deadline: string | null
   intro: string
+  form_url: string // external application form; blank = the built-in /apply form
 }
 export type PortfolioSettings = { cash: number; risk_free_rate: number; benchmark: string }
 export type DonationSettings = {

@@ -12,8 +12,8 @@ import { must, useMutation } from '@/components/portal/feedback'
 import { Badge } from '@/components/portal/ui'
 import { finishOnboarding } from './actions'
 
-type StepId = 'password' | 'about' | 'roles' | 'profile' | 'plans' | 'review'
-const STEP_LABELS: Record<StepId, string> = { password: 'Password', about: 'About you', roles: 'Your roles', profile: 'Public profile', plans: 'Plans', review: 'Finish' }
+type StepId = 'about' | 'roles' | 'profile' | 'plans' | 'review'
+const STEP_LABELS: Record<StepId, string> = { about: 'About you', roles: 'Your roles', profile: 'Public profile', plans: 'Plans', review: 'Finish' }
 const BIO_MAX = 1500
 
 const keyOf = (role: string, sector: string | null) => (role === 'portfolio_manager' ? `portfolio_manager:${sector}` : role)
@@ -29,19 +29,18 @@ function upcomingTerms() {
   })
 }
 
-export default function Onboarding({ member, heldRoles, requests, internal, pendingChange, sectors, needsPassword, initialStep }: {
+export default function Onboarding({ member, heldRoles, requests, internal, pendingChange, sectors, initialStep }: {
   member: Member
   heldRoles: RoleGrant[]
   requests: RoleRequest[]
   internal: MemberInternal | null
   pendingChange: ProfileChange | null
   sectors: { name: string; kind: SectorKind }[]
-  needsPassword: boolean
   initialStep?: string
 }) {
   const router = useRouter()
   const applicant = member.status === 'pending'
-  const steps: StepId[] = (['password', 'about', 'roles', 'profile', 'plans', 'review'] as StepId[]).filter(s => s !== 'password' || needsPassword)
+  const steps: StepId[] = ['about', 'roles', 'profile', 'plans', 'review']
   const [index, setIndex] = useState(() => Math.max(0, steps.indexOf(initialStep as StepId)))
   const step = steps[index]
   const { run, pending } = useMutation()
@@ -49,7 +48,6 @@ export default function Onboarding({ member, heldRoles, requests, internal, pend
   const investment = sectors.filter(s => s.kind === 'investment').map(s => s.name)
 
   // ── form state ─────────────────────────────────────────────────
-  const [pw, setPw] = useState({ password: '', confirm: '' })
   const start = pendingChange?.changes ?? {}
   const [about, setAbout] = useState({
     name: start.name ?? member.name,
@@ -90,12 +88,6 @@ export default function Onboarding({ member, heldRoles, requests, internal, pend
   // ── saving each step ───────────────────────────────────────────
   async function save(s: StepId): Promise<boolean> {
     const ok = await run(async () => {
-      if (s === 'password') {
-        if (pw.password.length < 8) throw new Error('Use at least 8 characters for your password.')
-        if (pw.password !== pw.confirm) throw new Error("The passwords don't match.")
-        const { error } = await supabase.auth.updateUser({ password: pw.password, data: { password_set: true } })
-        if (error) throw new Error(error.message)
-      }
       if (s === 'about') {
         if (!about.name.trim()) throw new Error('Please enter your name.')
         if (!/^20\d{2}$/.test(about.classYear)) throw new Error('Please choose your graduation year.')
@@ -175,26 +167,8 @@ export default function Onboarding({ member, heldRoles, requests, internal, pend
   const label = (k: string) => { const [role, sector] = k.split(':'); return `${ROLES[role as keyof typeof ROLES].label}${sector ? ` · ${sector}` : ''}` }
 
   let title = '', lead = '', body: React.ReactNode = null
-  if (step === 'password') {
-    title = `Welcome to FIG, ${firstName(member.name)}!`
-    lead = "First, create a password. You'll use it with your email to sign in from now on."
-    body = (
-      <div className="ui-form">
-        <input type="email" autoComplete="username" value={member.email ?? ''} readOnly hidden />
-        <div className="ui-field">
-          <label htmlFor="ob-pw">Password</label>
-          <input id="ob-pw" className="ui-input" type="password" autoComplete="new-password" autoFocus value={pw.password} onChange={e => setPw(p => ({ ...p, password: e.target.value }))} />
-          <span className="ui-hint">At least 8 characters.</span>
-        </div>
-        <div className="ui-field">
-          <label htmlFor="ob-pw2">Confirm password</label>
-          <input id="ob-pw2" className="ui-input" type="password" autoComplete="new-password" value={pw.confirm} onChange={e => setPw(p => ({ ...p, confirm: e.target.value }))} />
-        </div>
-      </div>
-    )
-  }
   if (step === 'about') {
-    title = needsPassword ? 'About you' : `Welcome, ${firstName(member.name)}!`
+    title = `Welcome, ${firstName(member.name)}!`
     lead = applicant ? 'Tell us where you fit in FIG. A co-president will confirm your details.' : "Let's make sure your details are right. This takes about two minutes."
     body = (
       <div className="ui-form">

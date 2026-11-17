@@ -6,7 +6,7 @@ import type { Sector, SettingsMap } from '@/lib/types'
 
 export const DEFAULT_SETTINGS: SettingsMap = {
   term: { name: 'Current term', starts_on: '2026-08-31' },
-  recruiting: { cycle: '', applications_open: false, deadline: null, intro: '' },
+  recruiting: { cycle: '', applications_open: false, deadline: null, intro: '', form_url: 'https://forms.gle/jjU8X7SC1bTgh3u78' },
   portfolio: { cash: 0, risk_free_rate: 0.04, benchmark: 'SPY' },
   donations: { rate: 0.05, fy_start_month: 7, asset_bases: {} },
   signup: { open: true, domains: ['student.fairfield.edu', 'fairfield.edu'] },
