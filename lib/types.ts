@@ -153,9 +153,16 @@ export type Holding = {
   name: string
   sector: string | null
   asset_type: AssetType
+  /** Shares, or face amount for bonds. */
   shares: number
+  /** Average cost per share, or per $100 of face for bonds. */
   cost_basis: number | null
+  /** Market value for positions without a live price (bonds). */
   manual_value: number | null
+  cusip: string | null
+  /** Bonds: annual coupon in percent (4.0 = 4%). */
+  coupon: number | null
+  maturity_on: string | null
   purchased_on: string | null
   thesis_url: string | null
   notes: string | null
@@ -316,7 +323,9 @@ export type RecruitingSettings = {
   intro: string
   form_url: string // external application form; blank = the built-in /apply form
 }
-export type PortfolioSettings = { cash: number; risk_free_rate: number; benchmark: string }
+/** The last Fidelity positions file imported (Portfolio → Holdings → Update from Fidelity). */
+export type FidelitySync = { as_of: string | null; label: string | null; imported_at: string; imported_by: string | null }
+export type PortfolioSettings = { cash: number; risk_free_rate: number; benchmark: string; fidelity?: FidelitySync | null }
 export type DonationSettings = {
   rate: number
   fy_start_month: number

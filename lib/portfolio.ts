@@ -2,8 +2,11 @@
 import type { Holding, Quote } from '@/lib/types'
 
 export type Position = Holding & {
+  /** Per share, or per $100 of face for bonds. */
   price: number | null
   value: number | null
+  /** Total cost basis. */
+  cost: number | null
   dayChange: number | null
   dayChangePct: number | null
   gain: number | null
@@ -20,6 +23,10 @@ export type Portfolio = {
   invested: number
   cash: number
   total: number
+  /** Cost and unrealized gain of the positions whose cost basis is known. */
+  cost: number
+  gain: number
+  costCovered: number
   dayChange: number
   dayChangePct: number | null
   missingShares: number
@@ -30,28 +37,40 @@ export type Portfolio = {
 
 export const PORTFOLIO_LEVEL = 'Portfolio-level'
 
+/** Bonds are quoted per $100 of face: a $2,000 note at 93.72 is worth $1,874.40. */
+export function priceUnit(h: Pick<Holding, 'asset_type' | 'ticker'>) {
+  return h.asset_type === 'bond' && !h.ticker ? 0.01 : 1
+}
+
+const n = (v: number | string | null | undefined) => (v === null || v === undefined || v === '' ? null : Number(v))
+
 export function buildPortfolio(holdings: Holding[], quotes: Record<string, Quote>, cash = 0): Portfolio {
   let missingShares = 0
   let unpriced = 0
 
   const positions: Position[] = holdings.filter(h => h.is_active).map(h => {
     const q = h.ticker ? quotes[h.ticker.toUpperCase()] ?? null : null
-    const price = q?.price ?? null
     if (h.ticker && !q) unpriced++
     if (h.ticker && !h.shares) missingShares++
-    const value = h.ticker
-      ? (price !== null && h.shares ? price * h.shares : null)
-      : (h.manual_value ?? null)
-    const dayChange = h.ticker && q?.change !== null && q?.change !== undefined && h.shares ? q.change * h.shares : null
-    const gain = h.ticker && price !== null && h.cost_basis && h.shares ? (price - h.cost_basis) * h.shares : null
+    const unit = priceUnit(h)
+    const shares = n(h.shares) ?? 0
+    const costBasis = n(h.cost_basis)
+    const manual = n(h.manual_value)
+    const quoted = q?.price ?? null
+    const value = h.ticker ? (quoted !== null && shares ? quoted * shares : null) : manual
+    const price = h.ticker ? quoted : (manual !== null && shares ? manual / (shares * unit) : null)
+    const cost = costBasis !== null && shares ? costBasis * shares * unit : null
+    const gain = value !== null && cost !== null ? value - cost : null
+    const dayChange = h.ticker && q?.change !== null && q?.change !== undefined && shares ? q.change * shares : null
     return {
       ...h,
       price,
       value,
+      cost,
       dayChange,
       dayChangePct: q?.changePct ?? null,
       gain,
-      gainPct: gain !== null && h.cost_basis ? gain / (h.cost_basis * h.shares) : null,
+      gainPct: gain !== null && cost ? gain / cost : null,
       weight: null,
       high52: q?.high52 ?? null,
       low52: q?.low52 ?? null,
@@ -62,6 +81,7 @@ export function buildPortfolio(holdings: Holding[], quotes: Record<string, Quote
   const total = invested + (cash || 0)
   for (const p of positions) p.weight = p.value !== null && total > 0 ? p.value / total : null
 
+  const withCost = positions.filter(p => p.gain !== null)
   const dayChange = positions.reduce((s, p) => s + (p.dayChange ?? 0), 0)
   const previousInvested = invested - dayChange
 
@@ -89,6 +109,9 @@ export function buildPortfolio(holdings: Holding[], quotes: Record<string, Quote
     invested,
     cash: cash || 0,
     total,
+    cost: withCost.reduce((s, p) => s + p.cost!, 0),
+    gain: withCost.reduce((s, p) => s + p.gain!, 0),
+    costCovered: withCost.length,
     dayChange,
     dayChangePct: previousInvested > 0 ? dayChange / previousInvested : null,
     missingShares,
@@ -102,4 +125,26 @@ export function buildPortfolio(holdings: Holding[], quotes: Record<string, Quote
 export function averageDayChange(positions: Position[]) {
   const vals = positions.map(p => p.dayChangePct).filter((v): v is number => v !== null)
   return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null
+}
+
+/** Bond yields from price (per $100), coupon (%) and maturity: current yield,
+ *  and yield to maturity with semiannual coupons (ignores accrued interest). */
+export function bondYields(price: number | null, coupon: number | null, maturity: string | null, today: string) {
+  if (price === null || price <= 0 || coupon === null) return { current: null, toMaturity: null, years: null }
+  const years = maturity ? (Date.parse(`${maturity}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`)) / (365.25 * 86_400_000) : null
+  const current = coupon / price
+  if (years === null || years <= 0) return { current, toMaturity: null, years }
+  const periods = years * 2
+  const pv = (y: number) => {
+    const r = y / 2
+    const discount = (1 + r) ** -periods
+    return (r === 0 ? (coupon / 2) * periods : ((coupon / 2) * (1 - discount)) / r) + 100 * discount
+  }
+  let lo = -0.5, hi = 1
+  for (let i = 0; i < 80; i++) {
+    const mid = (lo + hi) / 2
+    if (pv(mid) > price) lo = mid
+    else hi = mid
+  }
+  return { current, toMaturity: (lo + hi) / 2, years }
 }

@@ -49,7 +49,7 @@ function describe(e: Entry): string {
     case 'holdings':
       if (e.action === 'insert') return `added ${who} to holdings`
       if (e.action === 'delete') return `deleted holding ${who}`
-      if (to(d, 'is_active') === false) return `marked ${who} as sold`
+      if (to(d, 'is_active') === false || to(d, 'sold_on')) return `marked ${who} as sold`
       return `updated ${who} (${changed(d)})`
     case 'page_content': return `edited the ${who} page`
     case 'reports': return e.action === 'insert' ? `added report “${who}”` : e.action === 'delete' ? `deleted report “${who}”` : `updated report “${who}”`

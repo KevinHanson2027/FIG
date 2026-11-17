@@ -97,11 +97,24 @@ during breaks (Supabase pauses free projects after a week with no activity). It 
 ### 7. Deploy
 Push to `main`; Vercel deploys automatically.
 
-### 8. Add share counts
-The 40 current holdings were imported from the published Google Sheet without share counts, so
-portfolio values, weights and the performance chart stay blank until they're filled in. In the
-portal: **Portfolio** → pencil icon on each row → shares and average cost. Co-presidents and the
-PPG manager can edit every holding; each PM can edit their own sector's.
+### 8. Load the holdings from Fidelity
+1. On Fidelity.com: **Accounts → Positions** → the download icon. You get a file like
+   `Portfolio_Positions_Nov-17-2026.csv`.
+2. In the portal: **Portfolio → Holdings → Update from Fidelity** → choose that file.
+3. Review the preview: share counts and cost basis, new positions (pick their sector), holdings
+   no longer in the account (checked ones are marked as sold) and the cash balance. Click
+   **Apply update**.
+
+Every member can then see shares, average and total cost, value, weight, gain or loss, bond
+coupons and yields, and the cash balance. Co-presidents and the PPG manager can import; PMs can
+still edit their own sector's holdings with the pencil.
+
+**Purchase dates.** Fidelity's positions file doesn't include them. Add them in one of two ways:
+- In Fidelity: **Activity & Orders → History**, choose the longest date range, and download. Then
+  use **Update from Fidelity** with that file. Each date is checked against the current share
+  count. Holdings bought before the file's first date stay unchecked.
+- Use a spreadsheet with **Symbol** and **Date** columns, saved as CSV, in the same box. Or use the
+  pencil on a holding. Pitch decks usually have the date.
 
 ---
 
@@ -144,7 +157,7 @@ A member can have several. Everyone is an **Analyst**.
 | Analyst (everyone) | Home (what needs you, sector holdings and news), Portfolio (overview, holdings, markets), My Work (tasks, attendance, interviews), Resources, My Profile, referrals |
 | Portfolio Manager | Sector Team: roster (attendance, abroad, leadership interest), assign tasks, take attendance, manage the sector's holdings, post to their sector |
 | PPG Member | Portfolio Performance Group: analytics (risk, technicals, correlation, sector vs ETF), PPG files and assignments |
-| PPG Manager | Everything PPG members get, plus assigning PPG work, PPG meetings, cash balance, and editing the Holdings and Portfolio Reporting pages and reports |
+| PPG Manager | Everything PPG members get, plus assigning PPG work, PPG meetings, Update from Fidelity (holdings and cash), and editing the Holdings and Portfolio Reporting pages and reports |
 | Marketing | Website Content: edit text, links and images on every page; publish reports |
 | Recruiting | Pipeline (referrals and candidates), interviews, the application form link |
 | Donor Relations *(beta)* | Gifts received, donations made, the 5% giving target, receipts to send |
@@ -155,6 +168,9 @@ A member can have several. Everyone is an **Analyst**.
 - **New co-presidents:** at the start of your term, set a new club code (Control Panel →
   Settings) and share it at your first meeting. The old code stops working; members who already
   have a password aren't affected.
+- **Holdings:** after each trade, or at least monthly, download Fidelity's positions file and run
+  **Portfolio → Holdings → Update from Fidelity**. Add the purchase date for anything new in the
+  preview. The Holdings tab shows when the numbers are over a month old.
 - **Semesters:** nothing to do. The term is worked out from the date (Spring = January–July,
   Fall = August–December), and attendance rates reset with it.
 - **Meetings:** co-presidents create general meetings (Sector Teams → Attendance); PMs create
@@ -203,6 +219,11 @@ Gmail should be owned by a shared FIG account or passed to the incoming co-presi
   Editor:
   `insert into member_roles (member_id, role) select id, 'admin' from members_directory where email = 'you@student.fairfield.edu';`
 - **Member page shows “profiles are being updated”** — run `supabase/schema.sql` (step 1).
+- **Update from Fidelity says the database needs the latest update** — run `supabase/schema.sql`
+  (step 1), then try again.
+- **A holding is listed twice after an import** (e.g. a bond entered by hand) — in the preview,
+  set **Portal holding** to **Same as …** for that row. If it's already saved, delete the
+  duplicate with the pencil.
 
 ---
 

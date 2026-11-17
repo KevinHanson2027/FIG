@@ -1,5 +1,5 @@
 -- =====================================================================
--- FIG App — Supabase Database Schema v5 (Member Portal)
+-- FIG App — Supabase Database Schema v6 (Member Portal)
 -- ---------------------------------------------------------------------
 -- HOW TO RUN: Supabase Dashboard → SQL Editor → New query → paste this
 -- whole file → Run.
@@ -478,10 +478,13 @@ create table if not exists public.holdings (
   name         text not null,
   sector       text references public.sectors(name) on update cascade,  -- null = portfolio-level
   asset_type   text not null default 'equity',
-  shares       numeric(18, 6) not null default 0,
-  cost_basis   numeric(18, 4),              -- average cost per share
+  shares       numeric(18, 6) not null default 0,   -- face amount for bonds
+  cost_basis   numeric(18, 4),              -- average cost per share (per $100 of face for bonds)
   manual_value numeric(18, 2),              -- market value when there is no ticker
-  purchased_on date,
+  cusip        text,                        -- bonds: Fidelity's identifier, used to match imports
+  coupon       numeric(8, 4),               -- bonds: annual coupon in percent
+  maturity_on  date,                        -- bonds
+  purchased_on date,                        -- first bought
   thesis_url   text,
   notes        text,
   is_active    boolean not null default true,   -- false once sold; kept for history
@@ -490,11 +493,18 @@ create table if not exists public.holdings (
   created_at   timestamptz not null default now(),
   updated_at   timestamptz not null default now()
 );
+-- v6: bond details, filled in by Portfolio → Holdings → Update from Fidelity.
+alter table public.holdings
+  add column if not exists cusip       text,
+  add column if not exists coupon      numeric(8, 4),
+  add column if not exists maturity_on date;
 alter table public.holdings drop constraint if exists holdings_asset_type_check;
 alter table public.holdings add constraint holdings_asset_type_check
   check (asset_type in ('equity', 'etf', 'bond', 'fund', 'other'));
 create unique index if not exists holdings_active_ticker
   on public.holdings (upper(ticker)) where is_active and ticker is not null;
+create unique index if not exists holdings_active_cusip
+  on public.holdings (upper(cusip)) where is_active and cusip is not null;
 
 -- Written once a day by /api/cron/daily.
 create table if not exists public.portfolio_snapshots (
@@ -1639,7 +1649,8 @@ begin
 end $$;
 
 -- Starting holdings, from the published portfolio sheet (October 2026).
--- Share counts and cost basis are blank: PMs / the PPG manager fill them in.
+-- Share counts and cost basis are blank: fill them in with Portfolio →
+-- Holdings → Update from Fidelity.
 do $$
 begin
   if exists (select 1 from public.app_migrations where id = 'seed_holdings_v1')

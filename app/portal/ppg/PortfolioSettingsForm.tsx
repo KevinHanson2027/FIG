@@ -24,7 +24,7 @@ export default function PortfolioSettingsForm({ initial }: { initial: PortfolioS
           <div className="ui-field">
             <label htmlFor="ps-cash">Cash balance ($)</label>
             <input id="ps-cash" className="ui-input" type="number" step="0.01" min="0" value={cash} onChange={e => setCash(e.target.value)} />
-            <span className="ui-hint">Money-market and uninvested cash (e.g. SPAXX).</span>
+            <span className="ui-hint">Money market (e.g. SPAXX). Set automatically by Portfolio → Holdings → Update from Fidelity.</span>
           </div>
           <div className="ui-field">
             <label htmlFor="ps-rf">Risk-free rate (%)</label>

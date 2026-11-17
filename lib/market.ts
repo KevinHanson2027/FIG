@@ -1,5 +1,6 @@
 import 'server-only'
 import type { Quote } from '@/lib/types'
+import type { SecurityInfo } from '@/lib/fidelity'
 
 // Free market data from Yahoo Finance's public chart endpoints (no API key).
 // Responses are cached by Next.js so pages stay fast and we stay polite.
@@ -51,9 +52,10 @@ async function fetchSpark(symbols: string[]): Promise<Record<string, Quote>> {
 }
 
 export type History = { symbol: string; dates: string[]; closes: number[] }
+export type HistoryRange = '6mo' | '1y' | '2y' | '5y' | '10y' | 'max'
 
-/** Daily adjusted closes. Cached for six hours. */
-export async function getHistory(symbol: string, range: '6mo' | '1y' | '2y' | '5y' = '1y'): Promise<History | null> {
+/** Daily closes, adjusted for dividends unless `priceOnly`. Cached for six hours. */
+export async function getHistory(symbol: string, range: HistoryRange = '1y', priceOnly = false): Promise<History | null> {
   const url = `https://query2.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?range=${range}&interval=1d`
   try {
     const res = await fetch(url, { headers: { 'User-Agent': UA, Accept: 'application/json' }, next: { revalidate: 21600 } })
@@ -61,7 +63,7 @@ export async function getHistory(symbol: string, range: '6mo' | '1y' | '2y' | '5
     const json = await res.json()
     const result = json?.chart?.result?.[0]
     const stamps: number[] = result?.timestamp ?? []
-    const closes: (number | null)[] = result?.indicators?.adjclose?.[0]?.adjclose ?? result?.indicators?.quote?.[0]?.close ?? []
+    const closes: (number | null)[] = (!priceOnly && result?.indicators?.adjclose?.[0]?.adjclose) || result?.indicators?.quote?.[0]?.close || []
     const dates: string[] = []
     const values: number[] = []
     stamps.forEach((t, i) => {
@@ -77,8 +79,30 @@ export async function getHistory(symbol: string, range: '6mo' | '1y' | '2y' | '5
   }
 }
 
+/** Name, sector and type for tickers new to the portfolio (Yahoo search). Cached a day. */
+export async function getSecurityInfo(symbols: string[]): Promise<Record<string, SecurityInfo>> {
+  const out: Record<string, SecurityInfo> = {}
+  await Promise.all([...new Set(symbols.map(s => s.toUpperCase()))].slice(0, 25).map(async symbol => {
+    const url = `https://query2.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(symbol)}&quotesCount=5&newsCount=0&listsCount=0`
+    try {
+      const res = await fetch(url, { headers: { 'User-Agent': UA, Accept: 'application/json' }, next: { revalidate: 86400 } })
+      if (!res.ok) return
+      const json = await res.json()
+      const q = (json?.quotes ?? []).find((x: { symbol?: string }) => x.symbol?.toUpperCase() === symbol)
+      if (!q) return
+      const type = String(q.quoteType ?? '').toUpperCase()
+      out[symbol] = {
+        name: (q.longname || q.shortname || null)?.replace(/\s*\(The\)$/i, '') ?? null,
+        sector: q.sector ?? null,
+        type: type === 'ETF' ? 'etf' : type === 'MUTUALFUND' ? 'fund' : type === 'EQUITY' ? 'equity' : null,
+      }
+    } catch { /* unknown ticker or Yahoo unavailable: the preview asks instead */ }
+  }))
+  return out
+}
+
 /** Fetch many histories with limited concurrency. */
-export async function getHistories(symbols: string[], range: '6mo' | '1y' | '2y' | '5y' = '1y') {
+export async function getHistories(symbols: string[], range: HistoryRange = '1y') {
   const unique = [...new Set(symbols.map(s => s.toUpperCase()))]
   const out: Record<string, History> = {}
   let next = 0

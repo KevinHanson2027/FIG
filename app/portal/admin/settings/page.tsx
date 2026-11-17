@@ -50,6 +50,9 @@ export default async function SettingsPage() {
   const service = keyStatus === 'ok'
   const email = isEmailConfigured()
   const siteUrlSet = Boolean(process.env.SITE_URL || process.env.NEXT_PUBLIC_SITE_URL)
+  const fidelity = settings.portfolio.fidelity ?? null
+  const fidelityDate = fidelity ? fidelity.as_of ?? fidelity.imported_at.slice(0, 10) : null
+  const fidelityFresh = fidelityDate !== null && Date.parse(`${todayET()}T00:00:00Z`) - Date.parse(`${fidelityDate}T00:00:00Z`) <= 35 * 86_400_000
 
   return (
     <>
@@ -67,6 +70,9 @@ export default async function SettingsPage() {
               <Check ok={siteUrlSet} label="Links in emails" help={siteUrlSet ? `Point to ${origin}.` : `Point to ${origin}. Add SITE_URL (step 3) to use your main address.`} />
               <Check ok={email} label="Outgoing email" help={email ? 'Invites, password-reset links and recruiting emails send automatically.' : 'Optional. Members sign in with the club code and a password; email adds “Forgot password?” links and automatic emails (step 5).'} />
               <Check ok={Boolean(process.env.CRON_SECRET)} label="Daily snapshot" help={process.env.CRON_SECRET ? 'Portfolio value is recorded every weekday evening and the database stays awake.' : 'Add CRON_SECRET so the daily job can run (step 6).'} />
+              <Check ok={fidelityFresh} label="Holdings from Fidelity" help={
+                fidelityDate ? `Shares and cost basis as of ${fidelity?.label ?? fidelityDate}${fidelityFresh ? '.' : ', over a month ago.'} Portfolio → Holdings → Update from Fidelity.`
+                : 'Not imported yet. Portfolio → Holdings → Update from Fidelity (step 8).'} />
             </ul>
           </Card>
         </div>
