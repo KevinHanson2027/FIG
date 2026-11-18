@@ -3,15 +3,19 @@ import Link from 'next/link'
 import { ChartLine, Newspaper, PieChart } from 'lucide-react'
 import { requireMember } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
-import { getSectors } from '@/lib/data'
+import { getSectors, getSettings } from '@/lib/data'
 import { loadPortfolio, sinceFirstBuy } from '@/lib/holdings'
 import { getNews } from '@/lib/market'
-import { averageDayChange, PORTFOLIO_LEVEL } from '@/lib/portfolio'
-import { day, money, pct, todayET } from '@/lib/format'
+import { getCalendar } from '@/lib/calendar'
+import { PORTFOLIO_LEVEL } from '@/lib/portfolio'
+import { day, money, todayET } from '@/lib/format'
 import type { FidelitySync, Holding, Snapshot } from '@/lib/types'
-import { Card, Delta, EmptyState, Notice, PageHeader, Stat } from '@/components/portal/ui'
+import { Card, EmptyState, Notice, PageHeader } from '@/components/portal/ui'
 import { BarList, LineChart, VIZ } from '@/components/portal/charts'
 import { HoldingsTable } from '@/components/portal/HoldingsTable'
+import { PortfolioHeatmap, type HeatItem } from '@/components/portal/PortfolioHeatmap'
+import { PortfolioCalendar, monthGrid } from '@/components/portal/PortfolioCalendar'
+import { PortfolioSnapshot, SnapshotSkeleton } from '@/components/portal/PortfolioSnapshot'
 import { NewsList } from '@/components/portal/NewsList'
 import { SelectNav } from '@/components/portal/SelectNav'
 import { PortfolioTabs } from '@/components/portal/SectionTabs'
@@ -28,9 +32,13 @@ function syncInfo(sync: FidelitySync | null) {
 
 type SoldHolding = Pick<Holding, 'id' | 'ticker' | 'name' | 'sector' | 'purchased_on' | 'sold_on'>
 
-export default async function PortfolioPage({ searchParams }: { searchParams: { news?: string; tab?: string } }) {
+const TABS = ['overview', 'holdings', 'heatmap', 'calendar'] as const
+type Tab = (typeof TABS)[number]
+const DAY = 86_400_000
+
+export default async function PortfolioPage({ searchParams }: { searchParams: { news?: string; tab?: string; month?: string } }) {
   const { member, access } = await requireMember()
-  const tab = searchParams.tab === 'holdings' ? 'holdings' : 'overview'
+  const tab: Tab = TABS.includes(searchParams.tab as Tab) ? (searchParams.tab as Tab) : 'overview'
   const [{ portfolio, sync: lastSync }, sectors] = await Promise.all([loadPortfolio(), getSectors()])
   const investment = sectors.filter(s => s.kind === 'investment').map(s => s.name)
   const canImport = access.canManagePpg
@@ -103,8 +111,46 @@ export default async function PortfolioPage({ searchParams }: { searchParams: { 
     )
   }
 
+  if (tab === 'heatmap') {
+    const items: HeatItem[] = portfolio.positions.map(p => ({
+      id: p.id, label: p.ticker ?? p.name, name: p.name, sector: p.sector ?? PORTFOLIO_LEVEL,
+      value: p.value, weight: p.weight, day: p.dayChangePct, dayChange: p.dayChange, total: p.gainPct, cost: p.cost, gain: p.gain,
+    }))
+    return (
+      <>
+        {header}
+        <PortfolioHeatmap items={items} sized={portfolio.hasValues} />
+      </>
+    )
+  }
+
+  if (tab === 'calendar') {
+    const today = todayET()
+    const month = /^\d{4}-(0[1-9]|1[0-2])$/.test(searchParams.month ?? '') ? searchParams.month! : today.slice(0, 7)
+    const grid = monthGrid(month)
+    const horizon = new Date(Date.parse(`${today}T00:00:00Z`) + 21 * DAY).toISOString().slice(0, 10)
+    const settings = await getSettings()
+    const notes = settings.portfolio.events ?? []
+    const watch = settings.portfolio.watch ?? []
+    const events = await getCalendar({
+      from: grid.start < today ? grid.start : today,
+      to: grid.end > horizon ? grid.end : horizon,
+      tickers: [...portfolio.positions.map(p => p.ticker).filter((t): t is string => Boolean(t)), ...watch],
+      notes,
+    })
+    return (
+      <>
+        {header}
+        <PortfolioCalendar month={month} events={events} today={today} canEdit={access.canManagePpg} notes={notes} watch={watch} />
+      </>
+    )
+  }
+
   const supabase = await createClient()
-  const { data: snapshotRows } = await supabase.from('portfolio_snapshots').select('*').order('snapshot_date')
+  const [{ data: snapshotRows }, settings] = await Promise.all([
+    supabase.from('portfolio_snapshots').select('*').order('snapshot_date'),
+    getSettings(),
+  ])
   const snapshots = (snapshotRows ?? []) as Snapshot[]
   const newsSector = searchParams.news ?? (investment.includes(member.sector) ? member.sector : 'all')
 
@@ -120,16 +166,9 @@ export default async function PortfolioPage({ searchParams }: { searchParams: { 
         </div>
       )}
 
-      <div className="ui-grid ui-grid-4" style={{ marginBottom: 20 }}>
-        <Stat label="Total value" value={portfolio.hasValues ? money(portfolio.total) : '—'}
-          sub={`${portfolio.positions.length} holdings in ${portfolio.sectors.length} sector${portfolio.sectors.length === 1 ? '' : 's'}, plus cash`} />
-        <Stat label="Today" value={<Delta value={portfolio.hasValues ? portfolio.dayChangePct : averageDayChange(portfolio.positions)} />}
-          sub={portfolio.hasValues ? `${portfolio.dayChange >= 0 ? '+' : '−'}${money(Math.abs(portfolio.dayChange))}` : 'Average move per holding'} />
-        <Stat label="Unrealized gain" value={portfolio.costCovered ? <span className={portfolio.gain >= 0 ? 'ui-up' : 'ui-down'}>{portfolio.gain >= 0 ? '+' : '−'}{money(Math.abs(portfolio.gain))}</span> : '—'}
-          sub={portfolio.costCovered ? `${pct(portfolio.cost ? portfolio.gain / portfolio.cost : null)} on ${money(portfolio.cost)} cost` : 'Needs cost basis from Fidelity'} />
-        <Stat label="Cash" value={portfolio.hasValues || portfolio.cash ? money(portfolio.cash) : '—'}
-          sub={portfolio.total > 0 ? `${((portfolio.cash / portfolio.total) * 100).toFixed(1)}% of the portfolio` : 'Money market'} />
-      </div>
+      <Suspense fallback={<SnapshotSkeleton />}>
+        <PortfolioSnapshot portfolio={portfolio} snapshots={snapshots} settings={settings.portfolio} canEdit={access.canManagePpg} />
+      </Suspense>
 
       <div className="ui-grid ui-grid-main" style={{ marginBottom: 20 }}>
         <Card title={<><ChartLine size={18} /> Performance</>} description={snapshots.length >= 2 ? 'Daily portfolio value vs. the S&P 500, both indexed to 100.' : undefined}>

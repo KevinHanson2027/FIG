@@ -2,34 +2,47 @@
 import { useState } from 'react'
 import { Wallet } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { todayET } from '@/lib/format'
 import type { PortfolioSettings } from '@/lib/types'
 import { Card } from '@/components/portal/ui'
 import { must, useMutation } from '@/components/portal/feedback'
 
 export default function PortfolioSettingsForm({ initial }: { initial: PortfolioSettings }) {
+  const year = Number(todayET().slice(0, 4))
   const [cash, setCash] = useState(String(initial.cash ?? 0))
   const [rf, setRf] = useState(String(((initial.risk_free_rate ?? 0.04) * 100).toFixed(2)))
+  const [start, setStart] = useState(initial.year_start?.year === year && initial.year_start.value ? String(initial.year_start.value) : '')
   const { run, pending } = useMutation()
 
   async function save(e: React.FormEvent) {
     e.preventDefault()
-    const value = { ...initial, cash: Number(cash) || 0, risk_free_rate: (Number(rf) || 0) / 100 }
+    const value: PortfolioSettings = {
+      ...initial,
+      cash: Number(cash) || 0,
+      risk_free_rate: (Number(rf) || 0) / 100,
+      year_start: Number(start) > 0 ? { year, value: Number(start) } : null,
+    }
     await run(async () => must(await createClient().from('settings').upsert({ key: 'portfolio', value }, { onConflict: 'key' })), { success: 'Portfolio settings saved' })
   }
 
   return (
-    <Card title={<><Wallet size={18} /> Portfolio settings</>} description="Used for total value, the daily snapshot and risk metrics.">
+    <Card title={<><Wallet size={18} /> Portfolio settings</>} description="Used for total value, returns, the daily snapshot and risk metrics.">
       <form onSubmit={save} className="ui-form">
         <div className="ui-form-grid">
           <div className="ui-field">
             <label htmlFor="ps-cash">Cash balance ($)</label>
-            <input id="ps-cash" className="ui-input" type="number" step="0.01" min="0" value={cash} onChange={e => setCash(e.target.value)} />
+            <input id="ps-cash" className="ui-input" type="number" step="0.01" value={cash} onChange={e => setCash(e.target.value)} />
             <span className="ui-hint">Money market (e.g. SPAXX). Set automatically by Portfolio → Holdings → Update from Fidelity.</span>
           </div>
           <div className="ui-field">
             <label htmlFor="ps-rf">Risk-free rate (%)</label>
             <input id="ps-rf" className="ui-input" type="number" step="0.01" min="0" max="20" value={rf} onChange={e => setRf(e.target.value)} />
             <span className="ui-hint">For Sharpe ratio — use the current 3-month T-bill yield.</span>
+          </div>
+          <div className="ui-field span-2">
+            <label htmlFor="ps-start">Fund value on Dec 31, {year - 1} ($)</label>
+            <input id="ps-start" className="ui-input" type="number" step="0.01" min="0" value={start} onChange={e => setStart(e.target.value)} placeholder="From the December Fidelity statement" />
+            <span className="ui-hint">Only needed this year, for the YTD return on the Overview. From next year it&apos;s read from the daily values automatically.</span>
           </div>
         </div>
         <div><button type="submit" className="ui-btn ui-btn-primary" disabled={pending}>{pending ? 'Saving…' : 'Save'}</button></div>

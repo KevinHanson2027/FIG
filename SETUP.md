@@ -171,6 +171,16 @@ A member can have several. Everyone is an **Analyst**.
 - **Holdings:** after each trade, or at least monthly, download Fidelity's positions file and run
   **Portfolio → Holdings → Update from Fidelity**. Add the purchase date for anything new in the
   preview. The Holdings tab shows when the numbers are over a month old.
+- **Portfolio tabs:** Overview (fund value, 1D / 1M / YTD, vs. the S&P 500, best and worst
+  holdings, markets and the economy), Holdings, Heatmap, Calendar and Markets. All of it updates on
+  its own:
+  - 1D is live. 1M and YTD come from the daily values the daily job records (step 6), so 1M
+    appears a month after `CRON_SECRET` is set. For this year only, enter the fund's value on
+    Dec 31 in **Performance Group → Settings** so YTD shows now; from next year it's automatic.
+  - The **Calendar** fills in each holding's earnings (Yahoo Finance), FOMC decisions (the Fed), CPI,
+    PPI, the jobs report and JOLTS (BLS), GDP and PCE (BEA), and market holidays. FIG events
+    created in Attendance (type *Event*) appear too. Co-presidents and the PPG manager can add other
+    dates and follow extra tickers (e.g. NVDA) on the Calendar tab.
 - **Semesters:** nothing to do. The term is worked out from the date (Spring = January–July,
   Fall = August–December), and attendance rates reset with it.
 - **Meetings:** co-presidents create general meetings (Sector Teams → Attendance); PMs create
@@ -221,6 +231,8 @@ Gmail should be owned by a shared FIG account or passed to the incoming co-presi
 - **Member page shows “profiles are being updated”** — run `supabase/schema.sql` (step 1).
 - **Update from Fidelity says the database needs the latest update** — run `supabase/schema.sql`
   (step 1), then try again.
+- **A dash instead of a number on the Overview or Calendar** — that source didn't answer (they're
+  free public feeds). It fills in again on its own, usually within a few hours.
 - **A holding is listed twice after an import** (e.g. a bond entered by hand) — in the preview,
   set **Portal holding** to **Same as …** for that row. If it's already saved, delete the
   duplicate with the pencil.

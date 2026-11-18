@@ -325,7 +325,19 @@ export type RecruitingSettings = {
 }
 /** The last Fidelity positions file imported (Portfolio → Holdings → Update from Fidelity). */
 export type FidelitySync = { as_of: string | null; label: string | null; imported_at: string; imported_by: string | null }
-export type PortfolioSettings = { cash: number; risk_free_rate: number; benchmark: string; fidelity?: FidelitySync | null }
+/** A date added by hand to Portfolio → Calendar (an IPO, a speaker, a deadline). */
+export type CalendarNote = { id: string; date: string; title: string }
+export type PortfolioSettings = {
+  cash: number
+  risk_free_rate: number
+  benchmark: string
+  fidelity?: FidelitySync | null
+  /** Fund value at the end of last year, until the daily snapshots cover a full year. */
+  year_start?: { year: number; value: number } | null
+  /** Hand-added calendar dates, and extra tickers whose earnings the club follows. */
+  events?: CalendarNote[]
+  watch?: string[]
+}
 export type DonationSettings = {
   rate: number
   fy_start_month: number

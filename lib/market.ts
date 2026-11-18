@@ -101,6 +101,64 @@ export async function getSecurityInfo(symbols: string[]): Promise<Record<string,
   return out
 }
 
+// Yahoo's quote endpoint (which carries earnings dates) needs a session
+// cookie and a "crumb". Get one when needed and reuse it for a few hours.
+let yahooSession: { cookie: string; crumb: string; at: number } | null = null
+
+async function getYahooSession(fresh = false) {
+  if (!fresh && yahooSession && Date.now() - yahooSession.at < 4 * 3_600_000) return yahooSession
+  try {
+    const first = await fetch('https://fc.yahoo.com', { headers: { 'User-Agent': UA }, redirect: 'manual', cache: 'no-store' })
+    const cookie = (first.headers.getSetCookie?.() ?? []).map(c => c.split(';')[0]).join('; ')
+    const res = await fetch('https://query2.finance.yahoo.com/v1/test/getcrumb', { headers: { 'User-Agent': UA, cookie }, cache: 'no-store' })
+    const crumb = (await res.text()).trim()
+    if (!res.ok || !cookie || !crumb || crumb.length > 40 || /[<\s]/.test(crumb)) return null
+    yahooSession = { cookie, crumb, at: Date.now() }
+    return yahooSession
+  } catch {
+    return null
+  }
+}
+
+export type EarningsDate = { symbol: string; date: string; estimate: boolean; time: 'before open' | 'after close' | null }
+
+/** Last and next earnings dates for up to 100 tickers (Eastern dates). */
+export async function getEarningsDates(symbols: string[]): Promise<EarningsDate[]> {
+  const list = [...new Set(symbols.map(s => s.trim().toUpperCase()).filter(s => /^[A-Z0-9.\-]{1,10}$/.test(s)))].slice(0, 100)
+  if (list.length === 0) return []
+  const etDay = (sec: number) => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York' }).format(new Date(sec * 1000))
+  const etHour = (sec: number) => Number(new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', hour: 'numeric', hourCycle: 'h23' }).format(new Date(sec * 1000)))
+  for (const fresh of [false, true]) {
+    const session = await getYahooSession(fresh)
+    if (!session) return []
+    const url = `https://query2.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(list.join(','))}`
+      + `&fields=earningsTimestamp,earningsTimestampStart,earningsTimestampEnd,isEarningsDateEstimate&crumb=${encodeURIComponent(session.crumb)}`
+    try {
+      const res = await fetch(url, { headers: { 'User-Agent': UA, Accept: 'application/json', cookie: session.cookie }, next: { revalidate: 21600 } })
+      if (res.status === 401 || res.status === 403) continue // session expired: try once more with a new one
+      if (!res.ok) return []
+      const json = await res.json()
+      const out: EarningsDate[] = []
+      for (const q of json?.quoteResponse?.result ?? []) {
+        const seen = new Set<string>()
+        const estimate = Boolean(q.isEarningsDateEstimate)
+        for (const [ts, isEstimate] of [[q.earningsTimestamp, false], [q.earningsTimestampStart, estimate], [q.earningsTimestampEnd, estimate]] as [number | undefined, boolean][]) {
+          if (typeof ts !== 'number' || !ts) continue
+          const date = etDay(ts)
+          if (seen.has(date)) continue
+          seen.add(date)
+          const hour = etHour(ts)
+          out.push({ symbol: String(q.symbol).toUpperCase(), date, estimate: isEstimate, time: isEstimate || hour === 0 ? null : hour < 12 ? 'before open' : 'after close' })
+        }
+      }
+      return out
+    } catch {
+      return []
+    }
+  }
+  return []
+}
+
 /** Fetch many histories with limited concurrency. */
 export async function getHistories(symbols: string[], range: HistoryRange = '1y') {
   const unique = [...new Set(symbols.map(s => s.toUpperCase()))]

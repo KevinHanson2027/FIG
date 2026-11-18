@@ -20,11 +20,13 @@ export async function WorkTabs({ active, memberId }: { active: 'tasks' | 'attend
   )
 }
 
-export function PortfolioTabs({ active }: { active: 'overview' | 'holdings' | 'markets' }) {
+export function PortfolioTabs({ active }: { active: 'overview' | 'holdings' | 'heatmap' | 'calendar' | 'markets' }) {
   return (
     <SubNav label="Portfolio" items={[
       { href: '/portal/portfolio', label: 'Overview', active: active === 'overview' },
       { href: '/portal/portfolio?tab=holdings', label: 'Holdings', active: active === 'holdings' },
+      { href: '/portal/portfolio?tab=heatmap', label: 'Heatmap', active: active === 'heatmap' },
+      { href: '/portal/portfolio?tab=calendar', label: 'Calendar', active: active === 'calendar' },
       { href: '/portal/tools', label: 'Markets', active: active === 'markets' },
     ]} />
   )
