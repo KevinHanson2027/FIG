@@ -211,12 +211,14 @@ export function LineChart({ dates, series, height = 260, format = (v: number) =>
   )
 }
 
-/** Horizontal bars for one series (e.g. allocation): one hue, value at the tip. */
-export function BarList({ items, format, max: maxOverride }: {
+/** Horizontal bars for one series (e.g. allocation): one hue, value at the tip.
+ *  `unit` is a plain string (not a format function) so Server Components can pass it. */
+export function BarList({ items, unit = 'number', max: maxOverride }: {
   items: { label: string; value: number; note?: string }[]
-  format: (v: number) => string
+  unit?: 'percent' | 'number'
   max?: number
 }) {
+  const format = (v: number) => (unit === 'percent' ? `${v.toFixed(1)}%` : v.toLocaleString('en-US'))
   const max = maxOverride ?? Math.max(...items.map(i => i.value), 0)
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'minmax(90px, max-content) minmax(0, 1fr)', gap: '10px 14px', alignItems: 'center' }}>

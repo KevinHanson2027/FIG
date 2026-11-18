@@ -155,9 +155,9 @@ export default async function PortfolioPage({ searchParams }: { searchParams: { 
           {portfolio.sectors.length === 0 ? (
             <EmptyState title="No holdings yet" />
           ) : portfolio.hasValues ? (
-            <BarList items={portfolio.sectors.map(s => ({ label: s.sector, value: s.weight * 100, note: money(s.value) }))} format={v => `${v.toFixed(1)}%`} />
+            <BarList items={portfolio.sectors.map(s => ({ label: s.sector, value: s.weight * 100, note: money(s.value) }))} unit="percent" />
           ) : (
-            <BarList items={portfolio.sectors.map(s => ({ label: s.sector, value: s.count }))} format={v => `${v}`} />
+            <BarList items={portfolio.sectors.map(s => ({ label: s.sector, value: s.count }))} />
           )}
         </Card>
       </div>
