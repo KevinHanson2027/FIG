@@ -39,7 +39,7 @@ function chip(e: CalendarEvent) {
   if (e.kind === 'earnings') return e.ticker ?? e.title
   if (e.kind === 'fed') return 'FOMC'
   if (e.kind === 'market') return e.title.startsWith('Market closed') ? 'Closed' : 'Early close'
-  if (e.kind === 'data') return e.title === 'Jobs report' ? 'Jobs' : e.title === 'PCE inflation' ? 'PCE' : e.title
+  if (e.kind === 'data') return ({ 'Jobs report': 'Jobs', 'PCE inflation': 'PCE', 'Retail sales': 'Retail' } as Record<string, string>)[e.title] ?? e.title
   return e.title
 }
 
@@ -134,7 +134,7 @@ export function PortfolioCalendar({ month, events, today, canEdit, notes, watch 
           <section className="ui-card">
             <div className="ui-card-head"><div><h2>About this calendar</h2></div></div>
             <p className="ui-small ui-muted" style={{ padding: '0 20px 18px', lineHeight: 1.6 }}>
-              Earnings dates come from Yahoo Finance; Fed meetings from the Federal Reserve; CPI, PPI, jobs and JOLTS from the BLS; GDP and PCE from the BEA.
+              Earnings dates and retail sales come from Yahoo Finance; Fed meetings from the Federal Reserve; CPI, PPI, jobs and JOLTS from the BLS (or Yahoo when BLS is unavailable); GDP and PCE from the BEA.
               FIG events come from Attendance. The PPG manager and co-presidents can add other dates. Last checked {day(today)}.
             </p>
           </section>

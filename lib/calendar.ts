@@ -5,7 +5,7 @@ import 'server-only'
 //  • market holidays and early closes
 //  • club events (Attendance → events) and dates the PPG adds by hand
 import { createClient } from '@/lib/supabase/server'
-import { getEarningsDates } from '@/lib/market'
+import { getEarningsDates, getEconomicReleases } from '@/lib/market'
 import { marketHolidays, parseBeaSchedule, parseBlsIcs, parseFomc } from '@/lib/schedules'
 import { todayET } from '@/lib/format'
 import type { CalendarNote } from '@/lib/types'
@@ -28,19 +28,21 @@ const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML,
 
 async function page(url: string) {
   try {
-    const res = await fetch(url, { headers: { 'User-Agent': UA, Accept: 'text/html,text/calendar,*/*' }, next: { revalidate: 43200 } })
+    const res = await fetch(url, { headers: { 'User-Agent': UA, Accept: 'text/html,text/calendar,*/*', 'Accept-Language': 'en-US,en;q=0.9' }, next: { revalidate: 43200 } })
     return res.ok ? await res.text() : ''
   } catch {
     return ''
   }
 }
 
-/** Fed and economic-data release dates. Each source fails on its own. */
-export async function getMacroEvents(): Promise<CalendarEvent[]> {
-  const [fed, bls, bea] = await Promise.all([
+/** Fed and economic-data release dates. Each source fails on its own; BLS
+ *  blocks some cloud servers, so Yahoo's economic calendar fills any gaps. */
+export async function getMacroEvents(from: string, to: string): Promise<CalendarEvent[]> {
+  const [fed, bls, bea, yahoo] = await Promise.all([
     page('https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm'),
     page('https://www.bls.gov/schedule/news_release/bls.ics'),
     page('https://www.bea.gov/news/schedule'),
+    getEconomicReleases(from, to).catch(() => []),
   ])
   const events: CalendarEvent[] = []
   for (const m of parseFomc(fed)) {
@@ -50,6 +52,13 @@ export async function getMacroEvents(): Promise<CalendarEvent[]> {
   for (const r of [...parseBlsIcs(bls), ...parseBeaSchedule(bea, todayET())]) {
     events.push({ date: r.date, kind: 'data', title: r.name, time: r.time, detail: r.detail })
   }
+  const have = new Set(events.map(e => `${e.date}|${e.title}`))
+  for (const r of yahoo) {
+    const key = `${r.date}|${r.name}`
+    if (have.has(key)) continue
+    have.add(key)
+    events.push({ date: r.date, kind: 'data', title: r.name, time: r.time, detail: r.period ? `For ${r.period}` : null })
+  }
   return events
 }
 
@@ -58,7 +67,7 @@ export async function getCalendar({ from, to, tickers, notes }: { from: string; 
   const years = [...new Set([from.slice(0, 4), to.slice(0, 4)].map(Number))]
   const [earnings, macro, { data: meetings }] = await Promise.all([
     getEarningsDates(tickers),
-    getMacroEvents(),
+    getMacroEvents(from, to),
     supabase.from('meetings').select('id, title, meeting_date').eq('kind', 'event').gte('meeting_date', from).lte('meeting_date', to),
   ])
   const events: CalendarEvent[] = [

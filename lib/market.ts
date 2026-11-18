@@ -1,4 +1,5 @@
 import 'server-only'
+import { unstable_cache } from 'next/cache'
 import type { Quote } from '@/lib/types'
 import type { SecurityInfo } from '@/lib/fidelity'
 
@@ -158,6 +159,68 @@ export async function getEarningsDates(symbols: string[]): Promise<EarningsDate[
   }
   return []
 }
+
+export type EconomicRelease = { date: string; time: string; name: string; period: string | null }
+
+const ECON_NAMES: [RegExp, string][] = [
+  [/^CPI MM, SA$/i, 'CPI'],
+  [/^PPI Final Demand MM$/i, 'PPI'],
+  [/^Non-Farm Payrolls$/i, 'Jobs report'],
+  [/^JOLTS/i, 'JOLTS'],
+  [/^Retail Sales MM$/i, 'Retail sales'],
+  [/^GDP (Advance|2nd Estimate|3rd Estimate|Final)/i, 'GDP'],
+  [/^PCE Price Index MM/i, 'PCE inflation'],
+]
+
+/** Major US economic releases from Yahoo's economic calendar (Eastern dates). */
+async function fetchEconomicReleases(from: string, to: string): Promise<EconomicRelease[]> {
+  const session = await getYahooSession()
+  if (!session) return []
+  const out: EconomicRelease[] = []
+  const et = (iso: string) => {
+    const d = new Date(iso.endsWith('Z') ? iso : `${iso}Z`)
+    return {
+      date: new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York' }).format(d),
+      time: d.toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour: 'numeric', minute: '2-digit' }),
+    }
+  }
+  for (let offset = 0; offset < 1000; offset += 250) {
+    const body = {
+      sortType: 'ASC', entityIdType: 'economic_event', sortField: 'startdatetime',
+      includeFields: ['econ_release', 'country_code', 'startdatetime', 'period'],
+      query: { operator: 'and', operands: [
+        { operator: 'gte', operands: ['startdatetime', from] },
+        { operator: 'lte', operands: ['startdatetime', to] },
+        { operator: 'eq', operands: ['country_code', 'US'] },
+      ] },
+      offset, size: 250,
+    }
+    try {
+      const res = await fetch(`https://query1.finance.yahoo.com/v1/finance/visualization?lang=en-US&region=US&crumb=${encodeURIComponent(session.crumb)}`, {
+        method: 'POST', cache: 'no-store',
+        headers: { 'User-Agent': UA, cookie: session.cookie, 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify(body),
+      })
+      if (!res.ok) break
+      const doc = (await res.json())?.finance?.result?.[0]?.documents?.[0]
+      const cols: string[] = (doc?.columns ?? []).map((c: { id: string }) => c.id)
+      const rows: unknown[][] = doc?.rows ?? []
+      for (const row of rows) {
+        const r = Object.fromEntries(cols.map((c, i) => [c, row[i]])) as { econ_release?: string; startdatetime?: string; period?: string }
+        const rule = ECON_NAMES.find(([re]) => re.test(r.econ_release ?? ''))
+        if (!rule || !r.startdatetime) continue
+        out.push({ ...et(r.startdatetime), name: rule[1], period: r.period || null })
+      }
+      if (rows.length < 250) break
+    } catch {
+      break
+    }
+  }
+  return out
+}
+
+/** Cached for six hours across requests. */
+export const getEconomicReleases = unstable_cache(fetchEconomicReleases, ['yahoo-economic-releases'], { revalidate: 21600 })
 
 /** Fetch many histories with limited concurrency. */
 export async function getHistories(symbols: string[], range: HistoryRange = '1y') {
