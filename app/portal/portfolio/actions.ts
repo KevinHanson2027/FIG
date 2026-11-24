@@ -123,7 +123,7 @@ export async function applyHoldingsImport(input: Input & { choices?: ImportChoic
     for (const a of plan.added) {
       const choice = choices.added?.[a.key]
       const matchId = choice ? choice.matchId : a.suggest
-      const purchased = validDay(choice?.purchased_on, today)
+      const purchased = validDay(choice ? choice.purchased_on : a.purchased_on, today)
       if (matchId && missingIds.has(matchId) && !claimed.has(matchId)) {
         // Same security the portal already lists (a bond entered by hand, a new ticker): keep its name and sector.
         claimed.add(matchId)
@@ -154,7 +154,7 @@ export async function applyHoldingsImport(input: Input & { choices?: ImportChoic
     const portfolio = {
       ...settings.portfolio,
       cash: plan.cash.after,
-      fidelity: { as_of: plan.asOf.date, label: plan.asOf.label, imported_at: new Date().toISOString(), imported_by: viewer.member.name },
+      fidelity: { as_of: plan.asOf.date, label: plan.asOf.label, imported_at: new Date().toISOString(), imported_by: viewer.member.name, prices: plan.prices },
     }
     const { error: cashError } = await supabase.from('settings').upsert({ key: 'portfolio', value: portfolio }, { onConflict: 'key' })
     if (cashError) return { ok: false, error: `Holdings were updated, but cash wasn’t: ${friendly(cashError.message)}` }

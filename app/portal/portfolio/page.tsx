@@ -8,7 +8,7 @@ import { loadPortfolio, sinceFirstBuy } from '@/lib/holdings'
 import { getNews } from '@/lib/market'
 import { getCalendar } from '@/lib/calendar'
 import { PORTFOLIO_LEVEL } from '@/lib/portfolio'
-import { day, money, todayET } from '@/lib/format'
+import { day, money, priceTime, todayET } from '@/lib/format'
 import type { FidelitySync, Holding, Snapshot } from '@/lib/types'
 import { Card, EmptyState, Notice, PageHeader } from '@/components/portal/ui'
 import { BarList, LineChart, VIZ } from '@/components/portal/charts'
@@ -19,6 +19,7 @@ import { PortfolioSnapshot, SnapshotSkeleton } from '@/components/portal/Portfol
 import { NewsList } from '@/components/portal/NewsList'
 import { SelectNav } from '@/components/portal/SelectNav'
 import { PortfolioTabs } from '@/components/portal/SectionTabs'
+import { LivePrices } from '@/components/portal/LivePrices'
 
 export const metadata = { title: 'Portfolio' }
 
@@ -47,7 +48,12 @@ export default async function PortfolioPage({ searchParams }: { searchParams: { 
     <>
       <PageHeader
         title="Portfolio"
-        description={sync ? `Live prices, delayed about a minute. Shares and cost from Fidelity, ${sync.label}.` : "FIG's holdings, live. Prices are delayed about a minute."}
+        description={
+          <>
+            {sync ? `Shares and cost basis from Fidelity, ${sync.label}.` : "FIG's holdings with live prices."}
+            {tab !== 'calendar' && <>{' '}<LivePrices quotedAt={portfolio.quotedAt} asOf={priceTime(portfolio.quotedAt)} /></>}
+          </>
+        }
         actions={access.hasPpg ? <Link href="/portal/ppg" className="ui-btn ui-btn-secondary"><ChartLine size={16} /> Advanced analytics</Link> : null}
       />
       <PortfolioTabs active={tab} />

@@ -17,7 +17,12 @@ const HARD_ASSETS: [string, string, MarketLine['unit']][] = [
 
 export type FundKpis = {
   value: number | null
+  /** Today's change in dollars and percent of yesterday's total (Fidelity's "Today's gain/loss"). */
+  dayChange: number | null
   oneDay: number | null
+  /** Unrealized gain on today's holdings against their cost basis (Fidelity's "Total gain/loss"). */
+  gain: number | null
+  gainPct: number | null
   oneMonth: number | null
   ytd: number | null
   spxYtd: number | null
@@ -51,7 +56,6 @@ export function fundKpis(portfolio: Portfolio, snapshots: Snapshot[], settings: 
   const today = todayET()
   const year = Number(today.slice(0, 4))
   const value = portfolio.hasValues ? portfolio.total : null
-  const previous = value !== null ? value - portfolio.dayChange : null
   const monthBase = valueOn(snapshots, monthBefore(today))
   const snapBase = valueOn(snapshots, `${year - 1}-12-31`)
   const manualBase = settings.year_start?.year === year && settings.year_start.value > 0 ? settings.year_start.value : null
@@ -61,7 +65,10 @@ export function fundKpis(portfolio: Portfolio, snapshots: Snapshot[], settings: 
   const ranked = portfolio.positions.filter(p => p.gainPct !== null).sort((a, b) => b.gainPct! - a.gainPct!)
   return {
     value,
-    oneDay: value !== null && previous ? portfolio.dayChange / previous : null,
+    dayChange: value !== null && portfolio.dayChangePct !== null ? portfolio.dayChange : null,
+    oneDay: value !== null ? portfolio.dayChangePct : null,
+    gain: value !== null && portfolio.costCovered ? portfolio.gain : null,
+    gainPct: value !== null && portfolio.cost > 0 ? portfolio.gain / portfolio.cost : null,
     oneMonth: value !== null && monthBase ? value / monthBase - 1 : null,
     ytd,
     spxYtd,

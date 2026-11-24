@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { CalendarDays, ChartCandlestick, Flame, Globe, Grid3x3, ListFilter, Wrench } from 'lucide-react'
 import type { Quote } from '@/lib/types'
+import { marketHours } from '@/lib/format'
 
 const WATCHLIST = ['SPY', 'QQQ', 'DIA', 'IWM', 'VIX', 'TLT', 'GLD', 'USO']
 const SECTOR_ETFS = [
@@ -301,11 +302,24 @@ function TradingViewFinancials({ symbol }: { symbol: string }) {
 function QuoteTable({ symbols, title, names }: { symbols: string[]; title: string; names?: Record<string, string> }) {
   const [quotes, setQuotes] = useState<Quote[] | null>(null)
 
+  // Load now, then every minute while the market is open and the tab is visible.
   useEffect(() => {
-    fetch(`/api/quotes?symbols=${symbols.join(',')}`)
-      .then(r => r.json())
-      .then(d => setQuotes(symbols.map(s => d?.quotes?.[s]).filter(Boolean)))
-      .catch(() => setQuotes([]))
+    let last = 0
+    const load = () => {
+      last = Date.now()
+      fetch(`/api/quotes?symbols=${symbols.join(',')}`)
+        .then(r => r.json())
+        .then(d => setQuotes(prev => {
+          const next = symbols.map(s => d?.quotes?.[s]).filter(Boolean) as Quote[]
+          return next.length || !prev ? next : prev
+        }))
+        .catch(() => setQuotes(prev => prev ?? []))
+    }
+    load()
+    const id = window.setInterval(() => {
+      if (document.visibilityState === 'visible' && marketHours().refresh && Date.now() - last >= 60_000) load()
+    }, 10_000)
+    return () => window.clearInterval(id)
   // symbols is a stable constant — safe to disable
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])

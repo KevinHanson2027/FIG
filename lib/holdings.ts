@@ -3,6 +3,7 @@ import { cache } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import { getHistory, getQuotes, type HistoryRange } from '@/lib/market'
 import { getSettings } from '@/lib/data'
+import { todayET } from '@/lib/format'
 import { buildPortfolio, type Position } from '@/lib/portfolio'
 import type { Holding } from '@/lib/types'
 
@@ -15,11 +16,12 @@ export const loadPortfolio = cache(async () => {
   ])
   const holdings = (data ?? []) as Holding[]
   const quotes = await getQuotes(holdings.map(h => h.ticker))
+  const sync = settings.portfolio.fidelity ?? null
   return {
     holdings,
     quotes,
-    portfolio: buildPortfolio(holdings, quotes, settings.portfolio.cash),
-    sync: settings.portfolio.fidelity ?? null,
+    portfolio: buildPortfolio(holdings, quotes, settings.portfolio.cash, { today: todayET(), fallbackPrices: sync?.prices }),
+    sync,
   }
 })
 

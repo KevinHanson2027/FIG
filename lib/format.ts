@@ -33,6 +33,29 @@ export function todayET() {
   return new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(new Date())
 }
 
+/** The regular US stock market session, 9:30 AM–4:00 PM ET on weekdays.
+ *  `refresh` runs a few minutes past each end so opening and closing prices
+ *  come in. Holidays count as open; pages then show the last trade time. */
+export function marketHours(now = new Date()) {
+  const parts = new Intl.DateTimeFormat('en-US', { timeZone: TZ, weekday: 'short', hour: 'numeric', minute: 'numeric', hourCycle: 'h23' }).formatToParts(now)
+  const get = (type: string) => parts.find(p => p.type === type)?.value ?? ''
+  const weekday = get('weekday') !== 'Sat' && get('weekday') !== 'Sun'
+  const minutes = Number(get('hour')) * 60 + Number(get('minute'))
+  return {
+    open: weekday && minutes >= 570 && minutes < 960,
+    refresh: weekday && minutes >= 565 && minutes < 975,
+  }
+}
+
+/** When a price was set: "2:31 PM ET" today, otherwise "Fri 4:00 PM ET". */
+export function priceTime(ms: number | null | undefined) {
+  if (!ms) return null
+  const d = new Date(ms)
+  const time = d.toLocaleTimeString('en-US', { timeZone: TZ, hour: 'numeric', minute: '2-digit' })
+  const sameDay = new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(d) === todayET()
+  return sameDay ? `${time} ET` : `${d.toLocaleDateString('en-US', { timeZone: TZ, weekday: 'short' })} ${time} ET`
+}
+
 function parseDay(isoDate: string) {
   const [y, m, d] = isoDate.slice(0, 10).split('-').map(Number)
   return new Date(Date.UTC(y, m - 1, d))

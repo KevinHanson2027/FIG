@@ -312,6 +312,8 @@ export type Quote = {
   changePct: number | null
   high52: number | null
   low52: number | null
+  /** When the price was set (ms since epoch), from Yahoo's regularMarketTime. */
+  time: number | null
 }
 
 // settings table values
@@ -324,7 +326,14 @@ export type RecruitingSettings = {
   form_url: string // external application form; blank = the built-in /apply form
 }
 /** The last Fidelity positions file imported (Portfolio → Holdings → Update from Fidelity). */
-export type FidelitySync = { as_of: string | null; label: string | null; imported_at: string; imported_by: string | null }
+export type FidelitySync = {
+  as_of: string | null
+  label: string | null
+  imported_at: string
+  imported_by: string | null
+  /** Fidelity's last price per ticker in that file. Used only if a live quote is unavailable. */
+  prices?: Record<string, number>
+}
 /** A date added by hand to Portfolio → Calendar (an IPO, a speaker, a deadline). */
 export type CalendarNote = { id: string; date: string; title: string }
 export type PortfolioSettings = {

@@ -11,5 +11,7 @@ export async function GET(request: Request) {
     .filter(s => /^[A-Z0-9.\-^=]{1,12}$/.test(s))
     .slice(0, 40)
   const quotes = await getQuotes(symbols)
-  return NextResponse.json({ quotes }, { headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120' } })
+  // Short shared cache: everyone asking for the same symbols within a few
+  // seconds shares one lookup, and nobody gets prices more than ~30s old.
+  return NextResponse.json({ quotes }, { headers: { 'Cache-Control': 'public, s-maxage=15, stale-while-revalidate=15' } })
 }

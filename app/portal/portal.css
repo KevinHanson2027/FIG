@@ -503,9 +503,10 @@ a.portal-action:hover { border-color: #cfd2dc; box-shadow: var(--ui-shadow-2); }
 .snapshot-label { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ui-muted); }
 .snapshot-value { font-family: var(--font-primary); font-size: 2.4rem; line-height: 1.1; font-weight: 700; color: var(--ui-ink); font-variant-numeric: tabular-nums; margin-top: 2px; }
 .snapshot-sub { font-size: 0.8125rem; color: var(--ui-muted); margin-top: 4px; }
-.snapshot-returns { display: grid; grid-template-columns: repeat(4, auto); gap: 6px 26px; margin: 0; }
+.snapshot-returns { display: grid; grid-template-columns: repeat(5, auto); gap: 6px 26px; margin: 0; }
 .snapshot-returns dt { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ui-muted); white-space: nowrap; }
 .snapshot-returns dd { margin: 3px 0 0; font-size: 1.05rem; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.snapshot-dollars { display: block; margin-top: 1px; font-size: 0.8125rem; font-weight: 600; }
 .snapshot-note { margin-top: 12px; font-size: 0.78rem; color: var(--ui-muted); line-height: 1.5; }
 .snapshot-movers { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 22px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--ui-line); font-size: 0.95rem; }
 .snapshot-movers strong { color: var(--ui-ink); margin: 0 4px 0 6px; }
@@ -522,6 +523,24 @@ a.portal-action:hover { border-color: #cfd2dc; box-shadow: var(--ui-shadow-2); }
   .snapshot { padding: 16px; }
   .snapshot-value { font-size: 2rem; }
   .snapshot-returns { grid-template-columns: repeat(2, auto); gap: 10px 24px; }
+}
+
+/* ---------- Live prices status ---------- */
+.live-prices { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; vertical-align: middle; }
+.live-dot { display: inline-block; flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--ui-green); animation: live-pulse 2s ease-out infinite; vertical-align: middle; }
+@keyframes live-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(21, 128, 61, 0.45); }
+  70% { box-shadow: 0 0 0 6px rgba(21, 128, 61, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(21, 128, 61, 0); }
+}
+.live-refresh { display: inline-grid; place-items: center; width: 24px; height: 24px; padding: 0; border: 0; border-radius: 6px; background: transparent; color: var(--ui-muted); cursor: pointer; }
+.live-refresh:hover { background: var(--ui-hover); color: var(--ui-ink); }
+.live-refresh:focus-visible { outline: none; box-shadow: var(--ui-focus); }
+.live-refresh:disabled { cursor: default; }
+.live-refresh .spin { animation: live-spin 0.9s linear infinite; }
+@keyframes live-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .live-dot, .live-refresh .spin { animation: none; }
 }
 
 /* ---------- Heatmap ---------- */

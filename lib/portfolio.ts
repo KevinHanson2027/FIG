@@ -14,6 +14,10 @@ export type Position = Holding & {
   weight: number | null
   high52: number | null
   low52: number | null
+  /** Where `price` came from: a live quote, or Fidelity (bonds, and any stock whose live quote didn't come back). */
+  priceSource: 'live' | 'fidelity' | null
+  /** First bought today: today's change runs from the purchase price, as on Fidelity. */
+  boughtToday: boolean
 }
 
 export type SectorSlice = { sector: string; value: number; weight: number; count: number; dayChangePct: number | null }
@@ -28,11 +32,24 @@ export type Portfolio = {
   gain: number
   costCovered: number
   dayChange: number
+  /** Today's change against yesterday's total, cash included, like Fidelity's account "Today's gain/loss". */
   dayChangePct: number | null
   missingShares: number
+  /** Stocks with no live quote and no Fidelity price to fall back on (left out of the totals). */
   unpriced: number
+  /** Stocks valued at the last Fidelity price because no live quote came back. */
+  fallbackPriced: number
+  /** Time of the newest live quote (ms since epoch). */
+  quotedAt: number | null
   sectors: SectorSlice[]
   hasValues: boolean
+}
+
+export type PortfolioOptions = {
+  /** Today in Eastern time ("YYYY-MM-DD"), to spot holdings first bought today. */
+  today?: string
+  /** Last known price by ticker (from the Fidelity import), used when a live quote is missing. */
+  fallbackPrices?: Record<string, number>
 }
 
 export const PORTFOLIO_LEVEL = 'Portfolio-level'
@@ -44,36 +61,54 @@ export function priceUnit(h: Pick<Holding, 'asset_type' | 'ticker'>) {
 
 const n = (v: number | string | null | undefined) => (v === null || v === undefined || v === '' ? null : Number(v))
 
-export function buildPortfolio(holdings: Holding[], quotes: Record<string, Quote>, cash = 0): Portfolio {
+export function buildPortfolio(holdings: Holding[], quotes: Record<string, Quote>, cash = 0, options: PortfolioOptions = {}): Portfolio {
+  const { today, fallbackPrices = {} } = options
   let missingShares = 0
   let unpriced = 0
+  let fallbackPriced = 0
+  let quotedAt: number | null = null
 
   const positions: Position[] = holdings.filter(h => h.is_active).map(h => {
-    const q = h.ticker ? quotes[h.ticker.toUpperCase()] ?? null : null
-    if (h.ticker && !q) unpriced++
-    if (h.ticker && !h.shares) missingShares++
+    const ticker = h.ticker ? h.ticker.trim().toUpperCase() : null
+    const q = ticker ? quotes[ticker] ?? null : null
+    const fallback = ticker && !q ? n(fallbackPrices[ticker] ?? fallbackPrices[ticker.replace(/[./]/g, '-')]) : null
+    if (ticker && !q) {
+      if (fallback !== null && fallback > 0) fallbackPriced++
+      else unpriced++
+    }
+    if (ticker && !h.shares) missingShares++
+    if (q?.time && (quotedAt === null || q.time > quotedAt)) quotedAt = q.time
     const unit = priceUnit(h)
     const shares = n(h.shares) ?? 0
     const costBasis = n(h.cost_basis)
     const manual = n(h.manual_value)
-    const quoted = q?.price ?? null
-    const value = h.ticker ? (quoted !== null && shares ? quoted * shares : null) : manual
-    const price = h.ticker ? quoted : (manual !== null && shares ? manual / (shares * unit) : null)
+    const quoted = q?.price ?? (fallback !== null && fallback > 0 ? fallback : null)
+    const value = ticker ? (quoted !== null && shares ? quoted * shares : null) : manual
+    const price = ticker ? quoted : (manual !== null && shares ? manual / (shares * unit) : null)
     const cost = costBasis !== null && shares ? costBasis * shares * unit : null
     const gain = value !== null && cost !== null ? value - cost : null
-    const dayChange = h.ticker && q?.change !== null && q?.change !== undefined && shares ? q.change * shares : null
+    const boughtToday = Boolean(today && ticker && h.purchased_on === today)
+    let dayChange = ticker && q?.change !== null && q?.change !== undefined && shares ? q.change * shares : null
+    let dayChangePct = q?.changePct ?? null
+    // Bought today: FIG only made (or lost) the move since the purchase, not since yesterday's close.
+    if (boughtToday && q && gain !== null && cost) {
+      dayChange = gain
+      dayChangePct = gain / cost
+    }
     return {
       ...h,
       price,
       value,
       cost,
       dayChange,
-      dayChangePct: q?.changePct ?? null,
+      dayChangePct,
       gain,
       gainPct: gain !== null && cost ? gain / cost : null,
       weight: null,
       high52: q?.high52 ?? null,
       low52: q?.low52 ?? null,
+      priceSource: ticker ? (q ? 'live' : quoted !== null ? 'fidelity' : null) : manual !== null ? 'fidelity' : null,
+      boughtToday,
     }
   })
 
@@ -83,7 +118,8 @@ export function buildPortfolio(holdings: Holding[], quotes: Record<string, Quote
 
   const withCost = positions.filter(p => p.gain !== null)
   const dayChange = positions.reduce((s, p) => s + (p.dayChange ?? 0), 0)
-  const previousInvested = invested - dayChange
+  const previousTotal = total - dayChange
+  const hasDayChange = positions.some(p => p.dayChange !== null)
 
   const bySector = new Map<string, { value: number; count: number; change: number }>()
   for (const p of positions) {
@@ -113,9 +149,11 @@ export function buildPortfolio(holdings: Holding[], quotes: Record<string, Quote
     gain: withCost.reduce((s, p) => s + p.gain!, 0),
     costCovered: withCost.length,
     dayChange,
-    dayChangePct: previousInvested > 0 ? dayChange / previousInvested : null,
+    dayChangePct: hasDayChange && invested > 0 && previousTotal > 0 ? dayChange / previousTotal : null,
     missingShares,
     unpriced,
+    fallbackPriced,
+    quotedAt,
     sectors,
     hasValues: invested > 0,
   }

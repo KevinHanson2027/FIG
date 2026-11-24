@@ -15,6 +15,10 @@ function Signed({ v, points = false }: { v: number | null; points?: boolean }) {
   return <span className={up ? 'ui-up' : down ? 'ui-down' : 'ui-muted'}>{up ? '▲' : down ? '▼' : ''} {text}</span>
 }
 
+function SignedMoney({ v }: { v: number }) {
+  return <span className={v > 0 ? 'ui-up' : v < 0 ? 'ui-down' : 'ui-muted'}>{v > 0 ? '+' : v < 0 ? '−' : ''}{money(Math.abs(v))}</span>
+}
+
 function marketValue(l: MarketLine) {
   if (l.price === null) return '—'
   if (l.unit === 'yield') return `${l.price.toFixed(2)}%`
@@ -46,6 +50,7 @@ export async function PortfolioSnapshot({ portfolio, snapshots, settings, canEdi
   const market = await getMarketSnapshot()
   const k = fundKpis(portfolio, snapshots, settings, market.spxNow, market.spxYearStart)
   const year = Number(todayET().slice(0, 4))
+  const offline = portfolio.unpriced + portfolio.fallbackPriced
 
   return (
     <section className="ui-card snapshot" aria-label="Portfolio and market snapshot">
@@ -55,17 +60,25 @@ export async function PortfolioSnapshot({ portfolio, snapshots, settings, canEdi
           <div className="snapshot-value">{k.value !== null ? money(k.value) : '—'}</div>
           <div className="snapshot-sub">
             {portfolio.hasValues
-              ? <>Cash {money(portfolio.cash)} · {portfolio.costCovered ? <>unrealized <span className={portfolio.gain >= 0 ? 'ui-up' : 'ui-down'}>{portfolio.gain >= 0 ? '+' : '−'}{money(Math.abs(portfolio.gain))}</span></> : 'add cost basis for gains'}</>
+              ? <>{portfolio.costCovered ? <>Cost basis {money(portfolio.cost)} · </> : null}Cash {money(portfolio.cash)}</>
               : 'Update from Fidelity on the Holdings tab to show values.'}
           </div>
         </div>
         <dl className="snapshot-returns">
-          <div><dt>1D</dt><dd><Signed v={k.oneDay} /></dd></div>
+          <div><dt>Today</dt><dd><Signed v={k.oneDay} />{k.dayChange !== null && <span className="snapshot-dollars"><SignedMoney v={k.dayChange} /></span>}</dd></div>
+          <div title="Unrealized gain on today's holdings against their Fidelity cost basis"><dt>Total gain</dt><dd><Signed v={k.gainPct} />{k.gain !== null && <span className="snapshot-dollars"><SignedMoney v={k.gain} /></span>}</dd></div>
           <div><dt>1M</dt><dd><Signed v={k.oneMonth} /></dd></div>
           <div><dt>YTD</dt><dd><Signed v={k.ytd} /></dd></div>
           <div><dt>vs S&amp;P 500 (YTD)</dt><dd><Signed v={k.vsSpx} points /></dd></div>
         </dl>
       </div>
+      {offline > 0 && (
+        <p className="snapshot-note">
+          {portfolio.fallbackPriced > 0 && `Live prices didn’t load for ${portfolio.fallbackPriced} holding${portfolio.fallbackPriced === 1 ? '' : 's'}, so ${portfolio.fallbackPriced === 1 ? 'it uses' : 'they use'} the price from the last Fidelity file. `}
+          {portfolio.unpriced > 0 && `${portfolio.unpriced} holding${portfolio.unpriced === 1 ? ' has' : 's have'} no price right now and ${portfolio.unpriced === 1 ? 'is' : 'are'} left out of the total. `}
+          The page tries again on its next refresh.
+        </p>
+      )}
       {(k.oneMonth === null || k.ytd === null) && portfolio.hasValues && (
         <p className="snapshot-note">
           {k.oneMonth === null && 'The month return fills in once a month of daily values has been recorded. '}

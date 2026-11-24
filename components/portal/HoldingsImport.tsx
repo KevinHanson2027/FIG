@@ -37,7 +37,7 @@ export function HoldingsImport({ sectors, onClose }: { sectors: string[]; onClos
       setFile(f)
       setPlan(res.plan)
       if (res.plan.kind === 'positions') {
-        setAdded(Object.fromEntries(res.plan.added.map(a => [a.key, { sector: a.sector, purchased_on: null, matchId: a.suggest }])))
+        setAdded(Object.fromEntries(res.plan.added.map(a => [a.key, { sector: a.sector, purchased_on: a.purchased_on, matchId: a.suggest }])))
         setSell(new Set(res.plan.sellByDefault ? res.plan.missing.map(m => m.id) : []))
       } else {
         setDates(new Set(res.plan.items.filter(i => i.ok).map(i => i.id)))
@@ -225,7 +225,7 @@ export function PositionsPreview({ plan, sectors, added, setAdded, sell, setSell
           </p>
           <div className="import-new">
             {plan.added.map(a => {
-              const c = added[a.key] ?? { sector: a.sector, purchased_on: null, matchId: a.suggest }
+              const c = added[a.key] ?? { sector: a.sector, purchased_on: a.purchased_on, matchId: a.suggest }
               const bond = a.fields.asset_type === 'bond'
               return (
                 <div key={a.key} className="import-new-row">

@@ -75,6 +75,10 @@ export function parseDate(raw: string | null | undefined): string | null {
 
 const round = (n: number, digits: number) => Math.round(n * 10 ** digits) / 10 ** digits
 
+/** A number as the portal shows it in dollars and cents (same rounding as money()). */
+const centsFormat = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2, useGrouping: false })
+const shownCents = (n: number) => Number(centsFormat.format(n))
+
 /* ---------------------------------------------------------------------
  * Symbols and securities
  * ------------------------------------------------------------------- */
@@ -138,6 +142,10 @@ export type FidelityPosition = {
   lastPrice: number | null  // per share, or per $100 of face for bonds
   value: number | null
   costTotal: number | null
+  /** Fidelity's "Average cost basis" column, as shown (cents). */
+  avgCost: number | null
+  /** Bought on the file's date: Fidelity's "Today's gain/loss" equals the total gain/loss. */
+  boughtToday: boolean
 }
 
 export type FidelityAccount = {
@@ -232,6 +240,8 @@ function readPositions(rows: string[][], headerIndex: number, filename: string):
     value: find('current value', 'market value'),
     costTotal: find('cost basis total', 'cost basis'),
     avgCost: find('average cost basis', 'avg cost basis', 'average cost'),
+    todayGain: find('today s gain loss dollar', 'today s gain loss'),
+    totalGain: find('total gain loss dollar', 'total gain loss'),
   }
   const cell = (row: string[], i: number) => (i >= 0 ? (row[i] ?? '').trim() : '')
 
@@ -284,6 +294,10 @@ function readPositions(rows: string[][], headerIndex: number, filename: string):
     let costTotal = parseNumber(cell(row, col.costTotal))
     const avgCost = parseNumber(cell(row, col.avgCost))
     if (costTotal === null && avgCost !== null) costTotal = round(avgCost * quantity, 2)
+    // A holding bought on the download date has made exactly its total gain today.
+    const todayGain = parseNumber(cell(row, col.todayGain))
+    const totalGain = parseNumber(cell(row, col.totalGain))
+    const boughtToday = todayGain !== null && totalGain !== null && Math.abs(todayGain - totalGain) < 0.005 && !(todayGain === 0 && totalGain === 0)
 
     // Fidelity lists a security once per account type (cash / margin): add them up.
     const existing = acct.bySymbol.get(symbol)
@@ -291,6 +305,8 @@ function readPositions(rows: string[][], headerIndex: number, filename: string):
       existing.quantity = round(existing.quantity + quantity, 6)
       existing.value = existing.value !== null && value !== null ? round(existing.value + value, 2) : null
       existing.costTotal = existing.costTotal !== null && costTotal !== null ? round(existing.costTotal + costTotal, 2) : null
+      existing.avgCost = null // the two rows' averages don't combine; work it out from the totals
+      existing.boughtToday = existing.boughtToday && boughtToday
       continue
     }
     const position: FidelityPosition = {
@@ -301,6 +317,8 @@ function readPositions(rows: string[][], headerIndex: number, filename: string):
       lastPrice: parseNumber(cell(row, col.lastPrice)),
       value,
       costTotal,
+      avgCost,
+      boughtToday,
     }
     acct.bySymbol.set(symbol, position)
     acct.positions.push(position)
@@ -397,7 +415,12 @@ export type SecurityInfo = { name: string | null; sector: string | null; type: '
 export type PositionFields = Pick<CurrentHolding, 'ticker' | 'cusip' | 'asset_type' | 'shares' | 'cost_basis' | 'manual_value' | 'coupon' | 'maturity_on'>
 
 export type PlanUpdate = { id: string; label: string; sector: string | null; before: PositionFields; after: PositionFields; changed: (keyof PositionFields)[] }
-export type PlanNew = { key: string; label: string; name: string; description: string; fields: PositionFields; value: number | null; sector: string | null; suggest: string | null }
+export type PlanNew = {
+  key: string; label: string; name: string; description: string; fields: PositionFields; value: number | null
+  sector: string | null; suggest: string | null
+  /** The file's date when the holding was bought that day, otherwise null. */
+  purchased_on: string | null
+}
 export type PlanMissing = { id: string; label: string; sector: string | null; bond: boolean }
 
 export type PositionsPlan = {
@@ -413,6 +436,8 @@ export type PositionsPlan = {
   sellByDefault: boolean
   skipped: { symbol: string; reason: string }[]
   fileValue: number
+  /** Fidelity's last price for each stock and fund, kept as a backup for live quotes. */
+  prices: Record<string, number>
 }
 
 export type PlanDate = { id: string; label: string; current: string | null; date: string; ok: boolean; note: string }
@@ -481,12 +506,20 @@ export function fieldsFromFile(p: FidelityPosition, base: PositionFields | null)
       maturity_on: terms.maturity ?? base?.maturity_on ?? null,
     }
   }
+  // The database keeps 4 decimal places. Rounding to 4 and then to cents for
+  // display can land a cent away from Fidelity's own average (168.114996 →
+  // 168.1150 → $168.12 instead of $168.11), so nudge it to match.
+  let costBasis = perUnit !== null ? round(perUnit, 4) : null
+  if (costBasis !== null && p.avgCost !== null && shownCents(costBasis) !== p.avgCost) {
+    const nudged = [round(costBasis - 0.0001, 4), round(costBasis + 0.0001, 4)].find(v => shownCents(v) === p.avgCost)
+    if (nudged !== undefined) costBasis = nudged
+  }
   return {
     ticker: base?.ticker ?? p.symbol,
     cusip: base?.cusip ?? null,
     asset_type: base?.asset_type ?? 'equity',
     shares: p.quantity,
-    cost_basis: perUnit !== null ? round(perUnit, 4) : base?.cost_basis ?? null,
+    cost_basis: costBasis ?? base?.cost_basis ?? null,
     manual_value: base?.manual_value ?? null,
     coupon: base?.coupon ?? null,
     maturity_on: base?.maturity_on ?? null,
@@ -572,6 +605,7 @@ export function planPositions(file: PositionsFile, accountChoice: number | undef
       value: p.value,
       sector: guessSector(p, yahoo, sectors),
       suggest,
+      purchased_on: p.boughtToday ? file.asOf.date : null,
     }
   })
   const suggested = new Set(added.map(a => a.suggest).filter(Boolean))
@@ -592,6 +626,7 @@ export function planPositions(file: PositionsFile, accountChoice: number | undef
     sellByDefault,
     skipped: acct.skipped,
     fileValue: round(acct.positions.reduce((s, p) => s + (p.value ?? 0), 0) + acct.cash, 2),
+    prices: Object.fromEntries(acct.positions.filter(p => !p.bond && p.lastPrice !== null && p.lastPrice > 0).map(p => [p.symbol, p.lastPrice!])),
   }
 }
 

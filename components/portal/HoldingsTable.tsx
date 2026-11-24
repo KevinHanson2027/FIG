@@ -227,7 +227,7 @@ export function HoldingsTable({ positions, hasValues, editableSectors, sectorOpt
                       <td className="num hide-sm" title={bond ? 'Per $100 of face' : undefined}>{p.cost_basis === null ? '—' : bond ? num(p.cost_basis, 3) : money(p.cost_basis, true)}</td>
                       <td className="num hide-sm">
                         <span title={bond ? 'Per $100 of face, from Fidelity' : undefined}>{p.price === null ? '—' : bond ? num(p.price, 3) : money(p.price, true)}</span>
-                        <span className="cell-sub">{p.ticker ? <Change v={p.dayChangePct} /> : bond ? 'Fidelity price' : ''}</span>
+                        <span className="cell-sub">{p.ticker ? (p.priceSource === 'fidelity' ? 'Fidelity price' : <Change v={p.dayChangePct} />) : bond ? 'Fidelity price' : ''}</span>
                       </td>
                       <td className="num">
                         {money(p.value)}
@@ -318,7 +318,7 @@ function HoldingDetails({ p, spy, today, onEdit }: { p: Position; spy: number | 
     <div className="holding-detail-body">
       <dl className="holding-facts">
         <Fact k="First bought" v={p.purchased_on ? day(p.purchased_on) : 'Not recorded'}
-          sub={p.purchased_on ? `Held ${heldFor(p.purchased_on, today)}` : 'Add it with the pencil'} />
+          sub={p.purchased_on ? (p.purchased_on >= today ? 'Bought today' : `Held ${heldFor(p.purchased_on, today)}`) : 'Add it with the pencil'} />
         {ahead !== null && (
           <Fact k="vs. S&P 500 since then"
             v={<span className={ahead >= 0 ? 'ui-up' : 'ui-down'}>{ahead >= 0 ? 'Ahead' : 'Behind'} by {Math.abs(ahead * 100).toFixed(1)} pts</span>}
@@ -331,7 +331,10 @@ function HoldingDetails({ p, spy, today, onEdit }: { p: Position; spy: number | 
         <Fact k="Unrealized gain" v={p.gain === null ? '—' : <span className={p.gain >= 0 ? 'ui-up' : 'ui-down'}>{p.gain >= 0 ? '+' : '−'}{money(Math.abs(p.gain), true)}</span>}
           sub={p.gainPct !== null ? pct(p.gainPct) : undefined} />
         <Fact k="Price" v={p.price === null ? '—' : bond ? `${num(p.price, 3)} per $100` : money(p.price, true)}
-          sub={p.ticker ? <><Change v={p.dayChangePct} /> today{p.dayChange !== null ? ` (${signedMoney(p.dayChange)})` : ''}</> : bond ? 'From Fidelity' : undefined} />
+          sub={p.ticker
+            ? p.priceSource === 'fidelity' ? 'Last Fidelity price (live quote unavailable)'
+              : <><Change v={p.dayChangePct} /> {p.boughtToday ? 'since bought today' : 'today'}{p.dayChange !== null && <span className="nowrap"> ({signedMoney(p.dayChange)})</span>}</>
+            : bond ? 'From Fidelity' : undefined} />
         {range !== null && (
           <Fact k="52-week range"
             v={<span className="range52" role="img" aria-label={`${Math.round(range * 100)}% of the way from the 52-week low to the high`}><span style={{ left: `${range * 100}%` }} /></span>}

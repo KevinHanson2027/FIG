@@ -6,9 +6,10 @@ import { loadPortfolio } from '@/lib/holdings'
 import { getNews, getQuotes } from '@/lib/market'
 import { getSectors } from '@/lib/data'
 import { averageDayChange } from '@/lib/portfolio'
-import { money } from '@/lib/format'
+import { money, priceTime } from '@/lib/format'
 import { Card, Delta, EmptyState, Stat } from '@/components/portal/ui'
 import { NewsList } from '@/components/portal/NewsList'
+import { LivePrices } from '@/components/portal/LivePrices'
 
 export function StatSkeleton() {
   return <div className="ui-skeleton" style={{ height: 108 }} />
@@ -29,7 +30,7 @@ export async function MarketTiles({ sector }: { sector: string }) {
     <>
       {portfolio.hasValues ? (
         <Stat label="Portfolio value" icon={<ChartLine size={15} />} value={money(portfolio.total)}
-          sub={<Delta value={portfolio.dayChangePct} money={money(portfolio.dayChange)} />} />
+          sub={<><Delta value={portfolio.dayChangePct} money={money(Math.abs(portfolio.dayChange))} /> <span className="ui-muted">today</span> <LivePrices compact quotedAt={portfolio.quotedAt} asOf={priceTime(portfolio.quotedAt)} /></>} />
       ) : (
         <Stat label="Portfolio today" icon={<ChartLine size={15} />} value={<Delta value={averageDayChange(portfolio.positions)} />}
           sub={`Average move across ${portfolio.positions.length} holdings`} />

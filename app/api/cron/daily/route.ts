@@ -33,12 +33,21 @@ export async function GET(request: Request) {
   ])
   if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 })
 
-  const cash = Number((setting?.value as { cash?: number } | null)?.cash ?? 0)
+  const portfolioSetting = setting?.value as { cash?: number; fidelity?: { prices?: Record<string, number> } | null } | null
+  const cash = Number(portfolioSetting?.cash ?? 0)
   const quotes = await getQuotes([...(holdings ?? []).map(h => h.ticker as string | null), 'SPY'])
   if (!quotes.SPY) return NextResponse.json({ ok: false, error: 'Market data unavailable' }, { status: 502 })
 
-  const p = buildPortfolio((holdings ?? []) as Holding[], quotes, cash)
+  const p = buildPortfolio((holdings ?? []) as Holding[], quotes, cash, { today, fallbackPrices: portfolioSetting?.fidelity?.prices })
   if (!p.hasValues) return NextResponse.json({ ok: true, snapshot: 'skipped (no share counts yet)' })
+  // Missing prices would record a wrong value and bend the performance chart.
+  // A straggler or two can use the last Fidelity price; if more of the fund
+  // than that has no live price, skip the day (1M and YTD tolerate a gap).
+  const notLive = p.positions.filter(x => x.ticker && x.priceSource !== 'live')
+  const notLiveValue = notLive.reduce((s, x) => s + (x.value ?? 0), 0)
+  if (p.unpriced > 0 || notLiveValue > p.total * 0.05) {
+    return NextResponse.json({ ok: false, error: `No live price for ${notLive.map(x => x.ticker).join(', ')}; snapshot skipped` }, { status: 502 })
+  }
 
   const { error: upsertError } = await admin.from('portfolio_snapshots').upsert({
     snapshot_date: today,

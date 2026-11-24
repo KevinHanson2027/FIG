@@ -4,9 +4,16 @@ import type { Quote } from '@/lib/types'
 import type { SecurityInfo } from '@/lib/fidelity'
 
 // Free market data from Yahoo Finance's public chart endpoints (no API key).
-// Responses are cached by Next.js so pages stay fast and we stay polite.
+//
+// Prices are always fetched fresh. They used to go through Next.js's data
+// cache, which serves the saved copy and refreshes it in the background, so
+// the first person to open a page after a quiet spell saw prices from the
+// previous visit, sometimes days old. Now each server instance only remembers
+// a quote for a few seconds, enough to share one fetch between the parts of
+// a page and the people looking at it at the same moment.
 
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36'
+const HEADERS = { 'User-Agent': UA, Accept: 'application/json' }
 
 function chunk<T>(items: T[], size: number) {
   const out: T[][] = []
@@ -14,37 +21,99 @@ function chunk<T>(items: T[], size: number) {
   return out
 }
 
-/** Latest price and day change for up to hundreds of symbols (20 per request). */
+/** Short-lived memory shared by requests on the same server instance. */
+function memory<T>(ttl: number, limit = 400) {
+  const entries = new Map<string, { at: number; value: T }>()
+  return {
+    get(key: string) {
+      const hit = entries.get(key)
+      return hit && Date.now() - hit.at < ttl ? hit.value : undefined
+    },
+    set(key: string, value: T) {
+      if (entries.size >= limit) {
+        const now = Date.now()
+        for (const [k, v] of entries) if (now - v.at >= ttl) entries.delete(k)
+        if (entries.size >= limit) entries.clear()
+      }
+      entries.set(key, { at: Date.now(), value })
+    },
+  }
+}
+
+const QUOTE_TTL = 15_000
+const recentQuotes = memory<Quote>(QUOTE_TTL)
+
+/** Latest price and day change for up to hundreds of symbols (20 per request).
+ *  A symbol Yahoo doesn't return is asked for again, then through the chart
+ *  endpoint, so one bad response doesn't drop holdings out of the totals. */
 export async function getQuotes(symbols: (string | null | undefined)[]): Promise<Record<string, Quote>> {
   const unique = [...new Set(symbols.filter(Boolean).map(s => s!.trim().toUpperCase()))]
   if (unique.length === 0) return {}
-  const parts = await Promise.all(chunk(unique, 20).map(fetchSpark))
-  return Object.assign({}, ...parts)
+  const out: Record<string, Quote> = {}
+  let need: string[] = []
+  for (const s of unique) {
+    const hit = recentQuotes.get(s)
+    if (hit) out[s] = hit
+    else need.push(s)
+  }
+  for (let attempt = 0; attempt < 2 && need.length; attempt++) {
+    const parts = await Promise.all(chunk(need, 20).map(fetchSpark))
+    for (const part of parts) Object.assign(out, part)
+    need = need.filter(s => !out[s])
+  }
+  if (need.length) {
+    const singles = await Promise.all(need.slice(0, 12).map(fetchChartQuote))
+    for (const q of singles) if (q) out[q.symbol] = q
+  }
+  for (const s of unique) {
+    const q = out[s]
+    if (q && !recentQuotes.get(s)) recentQuotes.set(s, q)
+  }
+  return out
+}
+
+type YahooMeta = {
+  symbol?: string
+  regularMarketPrice?: number
+  chartPreviousClose?: number
+  previousClose?: number
+  regularMarketTime?: number
+  shortName?: string
+  longName?: string
+  fiftyTwoWeekHigh?: number
+  fiftyTwoWeekLow?: number
+}
+
+function quoteFrom(symbol: string, meta: YahooMeta): Quote | null {
+  const price = typeof meta.regularMarketPrice === 'number' ? meta.regularMarketPrice : null
+  if (price === null) return null
+  const prev = meta.chartPreviousClose ?? meta.previousClose ?? null
+  const change = prev !== null ? price - prev : null
+  return {
+    symbol: symbol.toUpperCase(),
+    name: meta.shortName ?? meta.longName ?? null,
+    price,
+    previousClose: prev,
+    change,
+    changePct: change !== null && prev ? change / prev : null,
+    high52: meta.fiftyTwoWeekHigh ?? null,
+    low52: meta.fiftyTwoWeekLow ?? null,
+    time: typeof meta.regularMarketTime === 'number' ? meta.regularMarketTime * 1000 : null,
+  }
 }
 
 async function fetchSpark(symbols: string[]): Promise<Record<string, Quote>> {
   const url = `https://query1.finance.yahoo.com/v7/finance/spark?symbols=${encodeURIComponent(symbols.join(','))}&range=1d&interval=1d`
   try {
-    const res = await fetch(url, { headers: { 'User-Agent': UA, Accept: 'application/json' }, next: { revalidate: 60 } })
+    const res = await fetch(url, { headers: HEADERS, cache: 'no-store' })
     if (!res.ok) return {}
     const json = await res.json()
     const out: Record<string, Quote> = {}
     for (const r of json?.spark?.result ?? []) {
       const meta = r?.response?.[0]?.meta
       if (!meta || !r.symbol) continue
-      const price: number | null = meta.regularMarketPrice ?? null
-      const prev: number | null = meta.chartPreviousClose ?? meta.previousClose ?? null
-      const change = price !== null && prev !== null ? price - prev : null
-      out[String(r.symbol).toUpperCase()] = {
-        symbol: r.symbol,
-        name: meta.shortName ?? meta.longName ?? null,
-        price,
-        previousClose: prev,
-        change,
-        changePct: change !== null && prev ? change / prev : null,
-        high52: meta.fiftyTwoWeekHigh ?? null,
-        low52: meta.fiftyTwoWeekLow ?? null,
-      }
+      const q = quoteFrom(String(r.symbol), meta)
+      if (q) out[q.symbol] = q
     }
     return out
   } catch {
@@ -52,14 +121,33 @@ async function fetchSpark(symbols: string[]): Promise<Record<string, Quote>> {
   }
 }
 
+/** One symbol through the chart endpoint, for symbols the batch call missed. */
+async function fetchChartQuote(symbol: string): Promise<Quote | null> {
+  const url = `https://query2.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?range=1d&interval=1d`
+  try {
+    const res = await fetch(url, { headers: HEADERS, cache: 'no-store' })
+    if (!res.ok) return null
+    const meta = (await res.json())?.chart?.result?.[0]?.meta
+    return meta ? quoteFrom(symbol, meta) : null
+  } catch {
+    return null
+  }
+}
+
 export type History = { symbol: string; dates: string[]; closes: number[] }
 export type HistoryRange = '6mo' | '1y' | '2y' | '5y' | '10y' | 'max'
 
-/** Daily closes, adjusted for dividends unless `priceOnly`. Cached for six hours. */
+const recentHistory = memory<History>(30 * 60_000, 300)
+
+/** Daily closes, adjusted for dividends unless `priceOnly`. Fetched fresh and
+ *  remembered for 30 minutes on the server instance. */
 export async function getHistory(symbol: string, range: HistoryRange = '1y', priceOnly = false): Promise<History | null> {
+  const key = `${symbol.toUpperCase()}|${range}|${priceOnly ? 'price' : 'adj'}`
+  const hit = recentHistory.get(key)
+  if (hit) return hit
   const url = `https://query2.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?range=${range}&interval=1d`
   try {
-    const res = await fetch(url, { headers: { 'User-Agent': UA, Accept: 'application/json' }, next: { revalidate: 21600 } })
+    const res = await fetch(url, { headers: HEADERS, cache: 'no-store' })
     if (!res.ok) return null
     const json = await res.json()
     const result = json?.chart?.result?.[0]
@@ -74,7 +162,10 @@ export async function getHistory(symbol: string, range: HistoryRange = '1y', pri
         values.push(c)
       }
     })
-    return values.length ? { symbol: symbol.toUpperCase(), dates, closes: values } : null
+    if (!values.length) return null
+    const history = { symbol: symbol.toUpperCase(), dates, closes: values }
+    recentHistory.set(key, history)
+    return history
   } catch {
     return null
   }
